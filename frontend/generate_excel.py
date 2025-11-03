@@ -22,21 +22,19 @@ class ExcelGenerationThread(QThread):
         super().__init__()
         self.orders_data = orders_data
         self.semana = semana
-        self.excel_mode = excel_mode  # 'append' o 'new'
+        self.excel_mode = excel_mode
         self.existing_file_path = existing_file_path
 
     def run(self):
         try:
             excel_data = []
             total_orders = len(self.orders_data)
-            order_ids = []  # Para guardar IDs de órdenes procesadas
+            order_ids = []
             
             for i, order_data in enumerate(self.orders_data):
-                # Solo procesar órdenes que no han sido añadidas al Excel
                 if not order_data.get('added_to_excel', False):
                     order_ids.append(order_data['idOrder'])
-                    
-                    # Progreso
+
                     progress = int((i + 1) / total_orders * 100)
                     self.progress.emit(progress)
                     
@@ -44,22 +42,19 @@ class ExcelGenerationThread(QThread):
                         book = book_info['book']
                         additives = book_info['additives']
                         
-                        # Determinar Tipo (servicio)
                         tipo = "R"
                         for additive in additives:
                             if additive["name"].lower().startswith("servicio"):
                                 tipo = additive["name"][9].upper()
                                 break
                         
-                        # Determinar Portada y tipo de carátula para el cálculo del lomo
                         portada = "normal"
-                        tipo_caratula = "normal"  # Por defecto
+                        tipo_caratula = "normal" 
                         
                         for additive in additives:
                             additive_name = additive["name"].lower()
                             if additive_name.startswith("carátula"):
                                 portada = additive["name"][9:]
-                                # Determinar el tipo de carátula para el cálculo del lomo
                                 if "dura" in additive_name:
                                     if "premium" in additive_name:
                                         tipo_caratula = "dura_premium"
@@ -71,14 +66,11 @@ class ExcelGenerationThread(QThread):
                                     tipo_caratula = "normal"
                                 break
                         
-                        # Función para calcular el Lomo según el tipo de carátula
                         def get_lomo(paginas, caratula_type):
                             if caratula_type in ["dura", "dura_premium"]:
-                                # Carátula dura: número de páginas/170 + 0.5
                                 return round(paginas / 170 + 0.5, 2)
                             else:
-                                # Carátula normal o con solapa: número de páginas/170 + 0.1
-                                return round(paginas / 170 + 0.1, 2)
+                                return round(paginas / 170 + 0.1, 4)
                         
                         numero_paginas = book.get('number_pages', 0)
                         lomo_calculado = get_lomo(numero_paginas, tipo_caratula)
@@ -92,27 +84,25 @@ class ExcelGenerationThread(QThread):
                             "Cant": book_info['quantity'],
                             "Portada": portada,
                             "Venta": order_data['total_price'],
-                            "Impreso": "",  # String vacío
-                            "Caratula": "", # String vacío
-                            "Pegado": "",   # String vacío
-                            "Listo": "",    # String vacío
-                            "Entregado": "", # String vacío
-                            "Lomo": lomo_calculado  # Lomo calculado
+                            "Impreso": "", 
+                            "Caratula": "", 
+                            "Pegado": "",   
+                            "Listo": "",    
+                            "Entregado": "", 
+                            "Lomo": lomo_calculado,
                         }
                         excel_data.append(row_data)
             
             if not excel_data:
                 self.error.emit("No hay órdenes nuevas para añadir al Excel.")
                 return
-            
-            # Crear DataFrame
+
             df = pd.DataFrame(excel_data)
-            
-            # Determinar la ruta del archivo
+            print("🔀 Ordenando datos por Semana y Número de Orden...")
+            df = df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
             
             if self.excel_mode == 'new':
-                # Caso 2: Nuevo Excel mensual
                 current_month = datetime.now().month
                 month_str = f"{current_month:02d}"
                 month_names = {
@@ -122,115 +112,111 @@ class ExcelGenerationThread(QThread):
                 }
                 month_name = month_names.get(month_str, 'mes')
                 filename = f"LOTE {month_str}.xlsx"
-                file_path = os.path.join(desktop_path, filename)
-                
-                # Guardar con openpyxl para aplicar estilos
+                file_path = os.path.join(desktop_path, filename)               
                 self._save_excel_with_styles(df, file_path)
             else:
-                # Caso 1: Añadir al Excel existente
                 file_path = self.existing_file_path
                 self._append_to_existing_excel(df, file_path)
-            
-            # Marcar órdenes como añadidas al Excel
+
             self._mark_orders_as_added_to_excel(order_ids)
-            
             self.finished.emit(file_path)
-            
         except Exception as e:
             self.error.emit(str(e))
 
     def _save_excel_with_styles(self, df, file_path):
-        """Guardar nuevo Excel con estilos mejorados"""
         wb = Workbook()
         ws = wb.active
         ws.title = "Órdenes"
-        
-        # PRIMERO: Añadir encabezados
         headers = list(df.columns)
         ws.append(headers)
-        
-        # SEGUNDO: Añadir todos los datos del DataFrame
         for _, row in df.iterrows():
-            ws.append(row.tolist())
-        
-        # TERCERO: Aplicar estilos
+            ws.append(row.tolist())    
         self._apply_excel_styles(ws, df)
-        
-        # CUARTO: Guardar el archivo
         wb.save(file_path)
         
         print(f"✅ Excel NUEVO guardado en: {file_path}")
         print(f"📊 Filas totales: {ws.max_row}")
 
     def _append_to_existing_excel(self, df, file_path):
-        """Añadir datos a un Excel existente"""
         print(f"📁 Intentando añadir a archivo existente: {file_path}")
         
         if os.path.exists(file_path):
             wb = load_workbook(file_path)
             ws = wb.active
             print(f"📂 Archivo existente cargado. Filas actuales: {ws.max_row}")
+            existing_data = []
+            headers = [cell.value for cell in ws[1]]
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row[0] is not None:  # Solo procesar filas con datos
+                    existing_data.append(row)
+            
+            if existing_data:
+                print(f"📋 Leyendo {len(existing_data)} filas existentes...")
+                existing_df = pd.DataFrame(existing_data, columns=headers)
+
+                combined_df = pd.concat([existing_df, df], ignore_index=True)
+
+                print("🔀 Reordenando todos los datos (existentes + nuevos)...")
+                combined_df = combined_df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
+                print(f"✅ Datos combinados ordenados: {len(combined_df)} filas totales")
+                
+                ws.delete_rows(2, ws.max_row)  
+                
+
+                for _, row in combined_df.iterrows():
+                    ws.append(row.tolist())
+                
+                print(f"📝 Todos los datos reordenados y escritos: {len(combined_df)} filas")
+                
+            else:
+                for _, row in df.iterrows():
+                    ws.append(row.tolist())
+                print(f"✅ Filas nuevas añadidas: {len(df)}")
+                
         else:
+            # Archivo no existe, crear nuevo
             wb = Workbook()
             ws = wb.active
             ws.title = "Órdenes"
             print("🆕 Nuevo archivo creado")
-        
-        # Verificar si la hoja está vacía o sin encabezados
-        if ws.max_row == 0 or (ws.max_row == 1 and ws.cell(1, 1).value is None):
-            # Hoja vacía, añadir encabezados
+            
+            # Añadir encabezados
             headers = list(df.columns)
             ws.append(headers)
-            print("📝 Encabezados añadidos")
+            
+            # Añadir datos nuevos (ya ordenados)
+            for _, row in df.iterrows():
+                ws.append(row.tolist())
+            print(f"✅ Filas añadidas al nuevo archivo: {len(df)}")
         
-        # Guardar el número de fila inicial para aplicar estilos después
-        start_row = ws.max_row + 1
-        print(f"📍 Añadiendo datos desde fila: {start_row}")
-        
-        # Añadir nuevos datos
-        rows_added = 0
-        for _, row in df.iterrows():
-            ws.append(row.tolist())
-            rows_added += 1
-        
-        print(f"✅ Filas añadidas: {rows_added}")
-        print(f"📊 Total de filas después de añadir: {ws.max_row}")
-        
-        # Aplicar estilos a las nuevas filas
-        if rows_added > 0:
-            self._apply_excel_styles_to_new_rows(ws, df, start_row)
+        # Aplicar estilos a toda la hoja
+        self._apply_excel_styles(ws, df)
         
         wb.save(file_path)
         
-        print(f"💾 Archivo guardado exitosamente")
+        print(f"💾 Archivo guardado exitosamente con todos los datos ordenados")
 
     def _apply_excel_styles(self, ws, df):
-        """Aplicar estilos completos a una hoja de Excel"""
         if ws.max_row == 0:
             print("⚠️  No hay datos para aplicar estilos")
             return
             
         print(f"🎨 Aplicando estilos a {ws.max_row} filas...")
-        
-        # Definir estilos
+
         header_font = Font(bold=True, color="000000", size=12)
         header_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
         
-        # Estilo para filas alternas
         light_gray_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
         white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
 
-        # Borde fino gris
         thin_border = Border(
             left=Side(style='thin', color='CCCCCC'),
             right=Side(style='thin', color='CCCCCC'),
             top=Side(style='thin', color='CCCCCC'),
             bottom=Side(style='thin', color='CCCCCC')
         )
-        
         headers = list(df.columns)
         
-        # Aplicar estilos a los encabezados (fila 1)
         for col_num in range(1, len(headers) + 1):
             cell = ws.cell(row=1, column=col_num)
             cell.font = header_font
@@ -238,30 +224,26 @@ class ExcelGenerationThread(QThread):
             cell.border = thin_border
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        # Aplicar estilos a todas las filas de datos (empezando desde la fila 2)
         for row_idx in range(2, ws.max_row + 1):
-            row_fill = white_fill if row_idx % 2 == 0 else light_gray_fill
-            
+            row_fill = white_fill if row_idx % 2 == 0 else light_gray_fill   
             for col_num in range(1, len(headers) + 1):
                 cell = ws.cell(row=row_idx, column=col_num)
                 cell.fill = row_fill
                 cell.border = thin_border
-                
-                # Alineación específica por tipo de columna
-                if col_num in [1, 3, 5, 6, 14]:  # Números
+
+                if col_num in [1, 3, 5, 6, 14]: 
                     cell.alignment = Alignment(horizontal="center", vertical="center")
-                elif col_num in [9, 10, 11, 12, 13]:  # Columnas de estado (strings)
+                elif col_num in [9, 10, 11, 12, 13]:  
                     cell.alignment = Alignment(horizontal="center", vertical="center")
-                elif col_num == 8:  # Venta (precio)
+                elif col_num == 8:  
                     cell.alignment = Alignment(horizontal="right", vertical="center")
                     cell.number_format = '"$"#,##0.00'
-                elif col_num == 14:  # Lomo (número decimal)
+                elif col_num == 14:  
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                     cell.number_format = "0.00"
-                else:  # Texto
+                else:
                     cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        
-        # Ajustar anchos de columna
+
         column_widths = {
             'A': 8, 'B': 8, 'C': 8, 'D': 40, 'E': 10, 'F': 6, 'G': 15,
             'H': 12, 'I': 10, 'J': 10, 'K': 10, 'L': 8, 'M': 12, 'N': 8
@@ -271,15 +253,13 @@ class ExcelGenerationThread(QThread):
             if col in ws.column_dimensions:
                 ws.column_dimensions[col].width = width
         
-        # Añadir filtros solo si hay datos
         if ws.max_row > 1:
             try:
                 ws.auto_filter.ref = f"A1:{chr(64 + len(headers))}{ws.max_row}"
                 print("🔍 Filtros aplicados")
             except Exception as e:
                 print(f"⚠️  Error aplicando auto_filter: {e}")
-        
-        # Congelar paneles solo si hay datos
+
         if ws.max_row >= 2:
             ws.freeze_panes = "A2"
             print("❄️  Paneles congelados")
@@ -287,7 +267,6 @@ class ExcelGenerationThread(QThread):
         print("✅ Estilos aplicados correctamente")
 
     def _apply_excel_styles_to_new_rows(self, ws, df, start_row):
-        """Aplicar estilos solo a las nuevas filas añadidas"""
         if start_row > ws.max_row:
             print("⚠️  No hay nuevas filas para aplicar estilos")
             return
@@ -316,12 +295,12 @@ class ExcelGenerationThread(QThread):
                 
                 if col_num in [1, 3, 5, 6, 14]:
                     cell.alignment = Alignment(horizontal="center", vertical="center")
-                elif col_num in [9, 10, 11, 12, 13]:  # Columnas de estado (strings)
+                elif col_num in [9, 10, 11, 12, 13]: 
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                 elif col_num == 8:
                     cell.alignment = Alignment(horizontal="right", vertical="center")
                     cell.number_format = '"$"#,##0.00'
-                elif col_num == 14:  # Lomo (número decimal)
+                elif col_num == 14: 
                     cell.alignment = Alignment(horizontal="center", vertical="center")
                     cell.number_format = "0.00"
                 else:
@@ -330,7 +309,6 @@ class ExcelGenerationThread(QThread):
         print("✅ Estilos aplicados a nuevas filas")
 
     def _mark_orders_as_added_to_excel(self, order_ids):
-        """Marca las órdenes como añadidas al Excel"""
         try:
             print(f"🏷️  Marcando {len(order_ids)} órdenes como añadidas al Excel...")
             for order_id in order_ids:
@@ -418,7 +396,6 @@ class ExcelTab(QWidget):
         controls_group = QGroupBox("Generar Reporte")
         controls_layout = QVBoxLayout(controls_group)
 
-        # Selector de semana
         semana_layout = QHBoxLayout()
         semana_label = QLabel("Seleccionar semana:")
         semana_label.setStyleSheet("font-weight: bold;")
@@ -442,7 +419,6 @@ class ExcelTab(QWidget):
         semana_layout.addStretch()
         controls_layout.addLayout(semana_layout)
 
-        # Selector de modo Excel
         excel_mode_layout = QHBoxLayout()
         excel_mode_label = QLabel("Modo de Excel:")
         excel_mode_label.setStyleSheet("font-weight: bold;")
@@ -464,7 +440,6 @@ class ExcelTab(QWidget):
         excel_mode_layout.addStretch()
         controls_layout.addLayout(excel_mode_layout)
 
-        # Información de columnas actualizada
         columns_info = QLabel(
             "Columnas del reporte:\n"
             "• Semana, Tipo, Orden, Libro, Páginas, Cantidad, Portada\n"
@@ -478,13 +453,11 @@ class ExcelTab(QWidget):
         columns_info.setStyleSheet("font-size: 11px; color: #666; padding: 8px; background-color: #f9f9f9; border-radius: 5px;")
         controls_layout.addWidget(columns_info)
 
-        # Botón generar
         self.generate_btn = QPushButton("📊 Generar Reporte Excel")
         self.generate_btn.setObjectName("primaryBtn")
         self.generate_btn.clicked.connect(self._generate_excel)
         controls_layout.addWidget(self.generate_btn, alignment=Qt.AlignCenter)
 
-        # Barra de progreso
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         self.progress_bar.setStyleSheet("""
@@ -505,25 +478,21 @@ class ExcelTab(QWidget):
         main_layout.addStretch()
 
     def _generate_excel(self):
-        """Genera el archivo Excel según el modo seleccionado"""
         print("🚀 Iniciando generación de Excel...")
         self.generate_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
 
-        # Obtener parámetros
         semana = int(self.semana_combo.currentText())
         excel_mode = 'append' if self.excel_mode_combo.currentText() == "Continuar Excel existente" else 'new'
 
         print(f"📋 Parámetros - Semana: {semana}, Modo: {excel_mode}")
 
-        # Para modo append, verificar si existe el archivo
         existing_file_path = None
         if excel_mode == 'append':
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
             existing_files = [f for f in os.listdir(desktop_path) if f.startswith("LOTE_") and f.endswith(".xlsx")]
             if existing_files:
-                # Tomar el archivo más reciente
                 existing_files.sort(key=lambda x: os.path.getctime(os.path.join(desktop_path, x)), reverse=True)
                 existing_file_path = os.path.join(desktop_path, existing_files[0])
                 print(f"📂 Archivo existente encontrado: {existing_file_path}")
@@ -533,7 +502,6 @@ class ExcelTab(QWidget):
                 excel_mode = 'new'
                 print("⚠️  No se encontró archivo existente, creando nuevo")
 
-        # Obtener todas las órdenes
         try:
             print("🌐 Obteniendo órdenes del servidor...")
             response = http_get(API_URL_ORDERS)
@@ -542,7 +510,6 @@ class ExcelTab(QWidget):
                 QMessageBox.warning(self, "Error", "No se pudieron obtener las órdenes del sistema.")
                 self._reset_ui()
                 return
-
             orders_list = response.json()
             print(f"📦 Total de órdenes obtenidas: {len(orders_list)}")
             
@@ -551,7 +518,6 @@ class ExcelTab(QWidget):
                 self._reset_ui()
                 return
 
-            # Obtener detalles completos de cada orden
             orders_data = []
             total_orders = len(orders_list)
             
@@ -565,7 +531,6 @@ class ExcelTab(QWidget):
                     if order_data:
                         orders_data.append(order_data)
                 
-                # Actualizar progreso preliminar
                 progress = int((i + 1) / total_orders * 50)
                 self.progress_bar.setValue(progress)
             
@@ -576,7 +541,6 @@ class ExcelTab(QWidget):
                 self._reset_ui()
                 return
 
-            # Filtrar órdenes que no han sido añadidas al Excel
             new_orders = [order for order in orders_data if not order.get('added_to_excel', False)]
             
             print(f"🆕 Órdenes nuevas (no añadidas al Excel): {len(new_orders)}")
@@ -588,7 +552,6 @@ class ExcelTab(QWidget):
                 self._reset_ui()
                 return
 
-            # Iniciar thread de generación de Excel
             print("🔄 Iniciando thread de generación de Excel...")
             self.thread = ExcelGenerationThread(new_orders, semana, excel_mode, existing_file_path)
             self.thread.progress.connect(self._update_progress)
@@ -602,7 +565,6 @@ class ExcelTab(QWidget):
             self._reset_ui()
 
     def _get_order_data(self, order_id):
-        """Obtiene los datos completos de una orden"""
         url = f"{API_URL_ORDERS}{order_id}/full_details/"
         r = http_get(url)
         if r and r.status_code == 200:
@@ -610,20 +572,17 @@ class ExcelTab(QWidget):
         return None
 
     def _update_progress(self, value):
-        """Actualiza la barra de progreso"""
         adjusted_value = 50 + int(value * 0.5)
         self.progress_bar.setValue(adjusted_value)
 
     def _on_excel_generated(self, file_path):
-        """Maneja la finalización exitosa de la generación del Excel"""
         print(f"✅ Proceso completado. Archivo: {file_path}")
         self._reset_ui()
         
-        # Contar órdenes en el archivo
         try:
             wb = load_workbook(file_path)
             ws = wb.active
-            order_count = ws.max_row - 1  # Restar la fila de encabezados
+            order_count = ws.max_row - 1 
             print(f"📊 Archivo contiene {order_count} órdenes")
         except Exception as e:
             order_count = "desconocido"
@@ -646,19 +605,16 @@ class ExcelTab(QWidget):
         )
 
     def _on_excel_error(self, error_message):
-        """Maneja errores en la generación del Excel"""
         print(f"❌ Error en generación de Excel: {error_message}")
         self._reset_ui()
         QMessageBox.critical(self, "Error", f"No se pudo generar el reporte Excel: {error_message}")
 
     def _reset_ui(self):
-        """Restablece la UI a su estado inicial"""
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.progress_bar.setValue(0)
 
     def _apply_styles(self):
-        """Aplica estilos a la pestaña"""
         self.setStyleSheet("""
             QGroupBox {
                 font-weight: bold;
