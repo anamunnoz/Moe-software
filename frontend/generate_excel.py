@@ -10,7 +10,7 @@ from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QPixmap
 from utils import http_get, http_put
 from urls import API_URL_ORDERS
-from datetime import datetime
+from datetime import datetime 
 
 
 class ExcelGenerationThread(QThread):
@@ -84,11 +84,11 @@ class ExcelGenerationThread(QThread):
                             "Cant": book_info['quantity'],
                             "Portada": portada,
                             "Venta": order_data['total_price'],
-                            "Impreso": "", 
-                            "Caratula": "", 
-                            "Pegado": "",   
-                            "Listo": "",    
-                            "Entregado": "", 
+                            "Impreso": None, 
+                            "Caratula": None, 
+                            "Pegado": None,   
+                            "Listo": None,    
+                            "Entregado": None, 
                             "Lomo": lomo_calculado,
                         }
                         excel_data.append(row_data)
@@ -211,9 +211,9 @@ class ExcelGenerationThread(QThread):
             "", 
             f"=COUNTA(A2:A{last_data_row})", 
             f"=SUM(H2:H{last_data_row})",
-            f'=COUNTIF(I2:I{last_data_row},"<>")', 
-            f'=COUNTIF(J2:J{last_data_row},"<>")',    
-            f'=COUNTIF(K2:K{last_data_row},"<>")',     
+            f'=COUNTIF(I2:I{last_data_row},"<>")',    
+            f'=COUNTIF(J2:J{last_data_row},"<>")', 
+            f'=COUNTIF(K2:K{last_data_row},"<>")', 
             f'=COUNTIF(L2:L{last_data_row},"<>")', 
             f'=COUNTIF(M2:M{last_data_row},"<>")', 
             ""                                        
@@ -231,11 +231,11 @@ class ExcelGenerationThread(QThread):
             "",  
             "", 
             "",  
-            f'=IF($A${footer_formula_row}>0,I{footer_formula_row}/$A${footer_formula_row},0)',  
-            f'=IF($A${footer_formula_row}>0,J{footer_formula_row}/$A${footer_formula_row},0)', 
-            f'=IF($A${footer_formula_row}>0,K{footer_formula_row}/$A${footer_formula_row},0)', 
-            f'=IF($A${footer_formula_row}>0,L{footer_formula_row}/$A${footer_formula_row},0)', 
-            f'=IF($A${footer_formula_row}>0,M{footer_formula_row}/$A${footer_formula_row},0)',
+            f'=IF($A${footer_formula_row}>1,I{footer_formula_row}/$A${footer_formula_row},0)',  
+            f'=IF($A${footer_formula_row}>1,J{footer_formula_row}/$A${footer_formula_row},0)', 
+            f'=IF($A${footer_formula_row}>1,K{footer_formula_row}/$A${footer_formula_row},0)', 
+            f'=IF($A${footer_formula_row}>1,L{footer_formula_row}/$A${footer_formula_row},0)', 
+            f'=IF($A${footer_formula_row}>1,M{footer_formula_row}/$A${footer_formula_row},0)',
             "" 
         ]
         
@@ -338,7 +338,7 @@ class ExcelGenerationThread(QThread):
                     cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
         column_widths = {
-            'A': 8, 'B': 8, 'C': 8, 'D': 40, 'E': 10, 'F': 6, 'G': 15,
+            'A': 8, 'B': 8, 'C': 8, 'D': 120, 'E': 10, 'F': 6, 'G': 15,
             'H': 12, 'I': 10, 'J': 10, 'K': 10, 'L': 8, 'M': 12, 'N': 8
         }
         
@@ -585,7 +585,7 @@ class ExcelTab(QWidget):
         existing_file_path = None
         if excel_mode == 'append':
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-            existing_files = [f for f in os.listdir(desktop_path) if f.startswith("LOTE_") and f.endswith(".xlsx")]
+            existing_files = [f for f in os.listdir(desktop_path) if f.startswith(f"LOTE {datetime.now().month}") and f.endswith(".xlsx")]
             if existing_files:
                 existing_files.sort(key=lambda x: os.path.getctime(os.path.join(desktop_path, x)), reverse=True)
                 existing_file_path = os.path.join(desktop_path, existing_files[0])
