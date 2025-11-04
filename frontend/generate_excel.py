@@ -4,7 +4,8 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QMessageBox, QGroupBox, QProgressBar, QFrame, QComboBox, QCheckBox
+    QMessageBox, QGroupBox, QProgressBar, QFrame, QComboBox,
+    QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QPixmap
@@ -117,24 +118,17 @@ class ExcelGenerationThread(QThread):
 
     def _save_excel_with_styles(self, df, file_path):
         wb = Workbook()
-
-
-
         ws = wb.active
         ws.title = str(datetime.now().month)
         headers = list(df.columns)
         ws.append(headers)
         for _, row in df.iterrows():
             ws.append(row.tolist())   
-
         self._add_footer_info(ws, df) 
         self._apply_excel_styles(ws, df)
 
         ws_gastos = wb.create_sheet("gastos")
-        # self._setup_gastos_sheet(ws_gastos)
-
         ws_resumen = wb.create_sheet("resumen")
-        # self._setup_resumen_sheet(ws_resumen)
     
         wb.save(file_path)
         
@@ -475,152 +469,183 @@ class ExcelTab(QWidget):
 
     def _setup_excel_tab(self):
         main_layout = QVBoxLayout(self)
-        main_layout.setAlignment(Qt.AlignTop)
+        main_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(40, 40, 40, 40)
 
-        #? ---------------- ENCABEZADO PRINCIPAL ----------------
+        #? ---------------- ENCABEZADO ----------------
         header_layout = QHBoxLayout()
         header_icon = QLabel()
-        header_icon.setPixmap(
-            QPixmap("icons/table.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        )
+        header_icon.setPixmap(QPixmap("icons/table.png").scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        
         header_title = QLabel("Generar Reporte Excel")
         header_title.setStyleSheet("""
             font-size: 28px;
-            font-weight: bold;
-            color: #333;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-left: 10px;
         """)
+
         header_layout.addWidget(header_icon)
         header_layout.addWidget(header_title)
         header_layout.addStretch()
-
-        line = QLabel()
-        line.setFixedHeight(2)
-        line.setStyleSheet("background-color: #d0d0d0; margin: 8px 0;")
-
         main_layout.addLayout(header_layout)
-        main_layout.addWidget(line)
 
-        #? ---------------- INSTRUCCIONES ----------------
-        instructions_group = QGroupBox("Instrucciones")
-        instructions_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                font-size: 14px;
-                border: 2px solid #2E86C1;
-                border-radius: 8px;
-                padding: 10px;
-                background-color: #f0f8ff;
-                margin-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-                color: #2E86C1;
+        #? ---------------- CARD PRINCIPAL ----------------
+        card = QWidget()
+        card.setStyleSheet("""
+            QWidget {
+                background-color: #f8f9fa;
+                border: none;
+                border-radius: 12px;
             }
         """)
-        
-        instructions_layout = QVBoxLayout(instructions_group)
-        instructions_label = QLabel(
-            "Esta herramienta generará un archivo Excel con las órdenes del sistema.\n\n"
-            "• <b>Continuar Excel existente:</b> Añade órdenes nuevas al archivo actual\n"
-            "• <b>Nuevo Excel mensual:</b> Crea un nuevo archivo LOTE_MM_mes.xlsx\n\n"
-            "Solo se incluirán órdenes que no han sido añadidas anteriormente al Excel.\n\n"
-            "📏 <b>Cálculo automático del Lomo:</b>\n"
-            "• Carátula Normal o con Solapa: Páginas/170 + 0.1\n"
-            "• Carátula Dura: Páginas/170 + 0.5\n\n"
-            "✅ <b>Checkboxes interactivos:</b> Las columnas Impreso, Carátula, Pegado, Listo y Entregado\n"
-            "tendrán checkboxes reales que pueden marcarse/hacerse clic en Excel."
-        )
-        instructions_label.setWordWrap(True)
-        instructions_label.setStyleSheet("font-size: 12px; color: #555;")
-        instructions_layout.addWidget(instructions_label)
-        main_layout.addWidget(instructions_group)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(30, 30, 30, 30)
+        card_layout.setSpacing(25)
+        card_layout.setAlignment(Qt.AlignTop)
 
-        #? ---------------- CONTROLES ----------------
-        controls_group = QGroupBox("Generar Reporte")
-        controls_layout = QVBoxLayout(controls_group)
-
+        #? ---------------- SELECCIÓN DE SEMANA ----------------
         semana_layout = QHBoxLayout()
+        semana_layout.setSpacing(15)
+        semana_layout.setAlignment(Qt.AlignLeft)
+
+        semana_icon = QLabel()
+        semana_icon.setPixmap(QPixmap("icons/week.png").scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        
         semana_label = QLabel("Seleccionar semana:")
-        semana_label.setStyleSheet("font-weight: bold;")
+        semana_label.setStyleSheet("font-size: 15px; color: #2c3e50; font-weight: 600;")
+
         self.semana_combo = QComboBox()
         self.semana_combo.addItems(["1", "2", "3", "4"])
-        self.semana_combo.setCurrentIndex(0)
+        self.semana_combo.setFixedWidth(80)
+        self.semana_combo.setFixedHeight(36)
         self.semana_combo.setStyleSheet("""
             QComboBox {
-                padding: 8px;
-                border: 1.5px solid #ccc;
+                padding: 6px 10px;
+                border: none;
                 border-radius: 6px;
                 font-size: 14px;
-                background-color: white;
+                background-color: #ffffff;
+                color: #2c3e50;
             }
             QComboBox:focus {
-                border: 1.5px solid #2E86C1;
+                border: none;
+                background-color: #f0f3f5;
+            }
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 25px;
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: url(icons/arrow.png);
+                width: 12px;
+                height: 12px;
+            }
+            QComboBox QAbstractItemView {
+                border: none;
+                background-color: white;
+                selection-background-color: #2c3e50;
+                selection-color: white;
+                border-radius: 6px;
             }
         """)
+
+        semana_layout.addWidget(semana_icon)
         semana_layout.addWidget(semana_label)
         semana_layout.addWidget(self.semana_combo)
         semana_layout.addStretch()
-        controls_layout.addLayout(semana_layout)
+        card_layout.addLayout(semana_layout)
 
-        excel_mode_layout = QHBoxLayout()
-        excel_mode_label = QLabel("Modo de Excel:")
-        excel_mode_label.setStyleSheet("font-weight: bold;")
-        
-        self.excel_mode_combo = QComboBox()
-        self.excel_mode_combo.addItems(["Continuar Excel existente", "Nuevo Excel mensual"])
-        self.excel_mode_combo.setStyleSheet("""
-            QComboBox {
-                padding: 8px;
-                border: 1.5px solid #ccc;
-                border-radius: 6px;
+        #? ---------------- SELECCIÓN DE MODO EXCEL ----------------
+        modo_layout = QHBoxLayout()
+        modo_layout.setSpacing(15)
+        modo_layout.setAlignment(Qt.AlignLeft)
+
+        excel_icon = QLabel()
+        excel_icon.setPixmap(QPixmap("icons/month.png").scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        excel_text = QLabel("Modo Excel:")
+        excel_text.setStyleSheet("font-size: 15px; color: #2c3e50; font-weight: 600;")
+        self.radio_continuar = QRadioButton("Continuar existente")
+        self.radio_nuevo = QRadioButton("Nuevo mensual")
+
+        radio_style = """
+            QRadioButton {
                 font-size: 14px;
-                background-color: white;
+                color: #2c3e50;
+                spacing: 8px;
             }
-        """)
-        
-        excel_mode_layout.addWidget(excel_mode_label)
-        excel_mode_layout.addWidget(self.excel_mode_combo)
-        excel_mode_layout.addStretch()
-        controls_layout.addLayout(excel_mode_layout)
+            QRadioButton::indicator {
+                width: 18px;
+                height: 18px;
+            }
+        """
+        self.radio_continuar.setStyleSheet(radio_style)
+        self.radio_nuevo.setStyleSheet(radio_style)
+        self.radio_continuar.setChecked(True)
+        self.modo_excel_group = QButtonGroup()
+        self.modo_excel_group.addButton(self.radio_continuar)
+        self.modo_excel_group.addButton(self.radio_nuevo)
 
-        columns_info = QLabel(
-            "Columnas del reporte:\n"
-            "• Semana, Tipo, Orden, Libro, Páginas, Cantidad, Portada\n"
-            "• Venta, Impreso, Carátula, Pegado, Listo, Entregado, Lomo\n\n"
-            "📏 <b>Lomo calculado automáticamente:</b>\n"
-            "• Normal/Solapa: Páginas/170 + 0.1\n"
-            "• Dura: Páginas/170 + 0.5\n\n"
-            "✅ Las columnas de estado tendrán checkboxes interactivos en Excel"
-        )
-        columns_info.setWordWrap(True)
-        columns_info.setStyleSheet("font-size: 11px; color: #666; padding: 8px; background-color: #f9f9f9; border-radius: 5px;")
-        controls_layout.addWidget(columns_info)
+        modo_layout.addWidget(excel_icon)
+        modo_layout.addWidget(excel_text)
+        modo_layout.addWidget(self.radio_continuar)
+        modo_layout.addWidget(self.radio_nuevo)
+        modo_layout.addStretch()
+        card_layout.addLayout(modo_layout)
 
-        self.generate_btn = QPushButton("📊 Generar Reporte Excel")
+        #? ---------------- BOTÓN GENERAR ----------------
+        self.generate_btn = QPushButton("Generar reporte")
+        self.generate_btn.setFixedHeight(45)
+        self.generate_btn.setMinimumWidth(250)
         self.generate_btn.setObjectName("primaryBtn")
         self.generate_btn.clicked.connect(self._generate_excel)
-        controls_layout.addWidget(self.generate_btn, alignment=Qt.AlignCenter)
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setVisible(False)
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                text-align: center;
-                height: 20px;
+        self.generate_btn.setStyleSheet("""
+            QPushButton#primaryBtn {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #2c3e50, stop:1 #000);
+                color: white;
+                font-weight: 600;
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-size: 15px;
             }
-            QProgressBar::chunk {
-                background-color: #2E86C1;
-                border-radius: 3px;
+            QPushButton#primaryBtn:hover {
+                background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #34495e, stop:1 #111);
+            }
+            QPushButton#primaryBtn:pressed {
+                background-color: #000;
             }
         """)
-        controls_layout.addWidget(self.progress_bar)
+        card_layout.addWidget(self.generate_btn, alignment=Qt.AlignCenter)
 
-        main_layout.addWidget(controls_group)
+        #? ---------------- BARRA DE PROGRESO ----------------
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setFixedHeight(20)
+        self.progress_bar.setFixedWidth(320)
+        self.progress_bar.setStyleSheet("""
+            QProgressBar {
+                border: none;
+                border-radius: 5px;
+                background-color: #ecf0f1;
+                font-size: 12px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #2c3e50;
+                border-radius: 5px;
+            }
+        """)
+        card_layout.addWidget(self.progress_bar, alignment=Qt.AlignCenter)
+
+        main_layout.addWidget(card)
         main_layout.addStretch()
+
+
 
     def _generate_excel(self):
         print("🚀 Iniciando generación de Excel...")
@@ -629,8 +654,7 @@ class ExcelTab(QWidget):
         self.progress_bar.setValue(0)
 
         semana = int(self.semana_combo.currentText())
-        excel_mode = 'append' if self.excel_mode_combo.currentText() == "Continuar Excel existente" else 'new'
-
+        excel_mode = 'new' if self.radio_nuevo.isChecked() else 'append'    
         print(f"📋 Parámetros - Semana: {semana}, Modo: {excel_mode}")
 
         existing_file_path = None
@@ -733,20 +757,11 @@ class ExcelTab(QWidget):
             order_count = "desconocido"
             print(f"⚠️  Error contando órdenes: {e}")
         
-        mode_text = "añadidas al Excel existente" if self.excel_mode_combo.currentText() == "Continuar Excel existente" else "en nuevo Excel mensual"
-        
         QMessageBox.information(
             self, 
             "Éxito", 
             f"Reporte Excel generado exitosamente:\n{file_path}\n\n"
-            f"Semana: {self.semana_combo.currentText()}\n"
             f"Órdenes procesadas: {order_count}\n"
-            f"Modo: {mode_text}\n\n"
-            f"📏 <b>Lomo calculado automáticamente:</b>\n"
-            f"• Carátula Normal/Solapa: Páginas/170 + 0.1\n"
-            f"• Carátula Dura: Páginas/170 + 0.5\n\n"
-            f"✅ <b>Checkboxes interactivos:</b> Las columnas Impreso, Carátula, Pegado, Listo y Entregado\n"
-            f"tienen checkboxes reales que pueden marcarse/hacerse clic en Excel."
         )
 
     def _on_excel_error(self, error_message):
@@ -790,6 +805,7 @@ class ExcelTab(QWidget):
                     stop:0 #444, stop:1 #111);
                 border: 1px solid #222;
             }
+
             QPushButton#primaryBtn:pressed {
                 background-color: #000;
                 border: 1px solid #000;
