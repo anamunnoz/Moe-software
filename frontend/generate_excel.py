@@ -100,7 +100,6 @@ class ExcelGenerationThread(QThread):
                 return
 
             df = pd.DataFrame(excel_data)
-            print("🔀 Ordenando datos por Semana y Número de Orden...")
             df = df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
             
@@ -112,6 +111,7 @@ class ExcelGenerationThread(QThread):
                 file_path = self.existing_file_path
                 self._append_to_existing_excel(df, file_path)
 
+            self._mark_orders_as_added_to_excel(order_ids)
             self.finished.emit(file_path)
         except Exception as e:
             self.error.emit(str(e))
@@ -129,20 +129,13 @@ class ExcelGenerationThread(QThread):
 
         ws_gastos = wb.create_sheet("gastos")
         ws_resumen = wb.create_sheet("resumen")
-    
         wb.save(file_path)
-        
-        print(f"✅ Excel NUEVO guardado en: {file_path}")
-        print(f"📊 Filas totales: {ws.max_row}")
 
-    def _append_to_existing_excel(self, df, file_path):
-        print(f"📁 Intentando añadir a archivo existente: {file_path}")
-        
+
+    def _append_to_existing_excel(self, df, file_path):        
         if os.path.exists(file_path):
             wb = load_workbook(file_path)
             ws = wb.active
-            print(f"📂 Archivo existente cargado. Filas actuales: {ws.max_row}")
-
             existing_data = []
             headers = [cell.value for cell in ws[1]]
 
@@ -158,49 +151,32 @@ class ExcelGenerationThread(QThread):
                         existing_row.append(ws.cell(row=row, column=col).value)
                     existing_data.append(existing_row)
 
-            print(f"📊 Datos existentes encontrados: {len(existing_data)} filas (hasta fila {data_end_row})")
-
             ws.delete_rows(1, ws.max_row)
-            print("🗑️  Todo el contenido del Excel eliminado")
-
             if existing_data:
                 existing_df = pd.DataFrame(existing_data, columns=headers)
                 combined_df = pd.concat([existing_df, df], ignore_index=True)
             else:
                 combined_df = df
-
-            print("🔀 Reordenando todos los datos...")
             combined_df = combined_df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
-            print(f"✅ Datos combinados ordenados: {len(combined_df)} filas totales")
-
             ws.append(headers)
             for _, row in combined_df.iterrows():
                 ws.append(row.tolist())
-            
-            print(f"📝 Todos los datos escritos: {len(combined_df)} filas")
-
             self._add_footer_info(ws, combined_df)
             
         else:
             wb = Workbook()
             ws = wb.active
             ws.title = "Órdenes"
-            print("🆕 Nuevo archivo creado")
             headers = list(df.columns)
             ws.append(headers)
             for _, row in df.iterrows():
                 ws.append(row.tolist())
-            print(f"✅ Filas añadidas al nuevo archivo: {len(df)}")
             self._add_footer_info(ws, df)
         
         self._apply_excel_styles(ws, df if 'combined_df' not in locals() else combined_df)
-
         wb.save(file_path)
         
-        print(f"💾 Archivo guardado exitosamente con todos los datos ordenados")
-
     def _add_footer_info(self, ws, df):
-        print("📝 Añadiendo fórmulas de Excel al final...")
         for _ in range(5):
             ws.append([None] * len(df.columns))
         
@@ -242,19 +218,11 @@ class ExcelGenerationThread(QThread):
             f'=IF($A${footer_formula_row}>0,M{footer_formula_row}/$A${footer_formula_row},0)',
             ""
         ]
-        
         ws.append(porcentaje_row)
-        print(f"✅ Fórmulas de Excel añadidas al final")
-        print(f"   📊 Referencia de datos: filas 2 a {last_data_row}")
-        print(f"   📏 Footer en filas: {footer_formula_row} (fórmulas) y {footer_formula_row + 1} (porcentajes)")
 
     def _apply_excel_styles(self, ws, df):
         if ws.max_row == 0:
-            print("⚠️  No hay datos para aplicar estilos")
             return
-            
-        print(f"🎨 Aplicando estilos a {ws.max_row} filas...")
-
         header_font = Font(bold=True, color="000000", size=12)
         header_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
         
@@ -286,13 +254,6 @@ class ExcelGenerationThread(QThread):
         footer_start_row = last_data_row + 6 
         footer_formula_row = footer_start_row
         footer_porcentaje_row = footer_start_row + 1
-
-        print(f"🎯 Estructura del archivo:")
-        print(f"   - Encabezado: fila 1")
-        print(f"   - Datos: filas 2 a {last_data_row} ({len(df)} órdenes)")
-        print(f"   - Líneas vacías: filas {last_data_row + 1} a {footer_start_row - 1}")
-        print(f"   - Footer fórmulas: fila {footer_formula_row}")
-        print(f"   - Footer porcentajes: fila {footer_porcentaje_row}")
 
         for row_idx in range(2, ws.max_row + 1):
             if row_idx == footer_porcentaje_row:
@@ -344,7 +305,6 @@ class ExcelGenerationThread(QThread):
                     cell.number_format = "0.00"
                 else:
                     cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        print("📏 Ajustando anchos de columna...")
 
         fixed_widths = {
             'A': 8,
@@ -364,9 +324,6 @@ class ExcelGenerationThread(QThread):
 
         for col, width in fixed_widths.items():
             ws.column_dimensions[col].width = width
-            print(f"   📐 Columna {col}: {width} (ancho fijo)")
-
-            print("   📚 Ajustando automáticamente columna D (Libro)...")
             column_d = ws['D']
             max_length = 0
 
@@ -390,28 +347,17 @@ class ExcelGenerationThread(QThread):
             adjusted_width = max(adjusted_width, 20)
 
             ws.column_dimensions['D'].width = adjusted_width
-            print(f"   📐 Columna D: {adjusted_width} (longitud máxima: {max_length})")
                 
         if last_data_row > 1:
-            try:
-                ws.auto_filter.ref = f"A1:{chr(64 + len(headers))}{last_data_row}"
-                print("🔍 Filtros aplicados solo a datos")
-            except Exception as e:
-                print(f"⚠️  Error aplicando auto_filter: {e}")
-
+            ws.auto_filter.ref = f"A1:{chr(64 + len(headers))}{last_data_row}"
+        
         if ws.max_row >= 2:
             ws.freeze_panes = "A2"
-            print("❄️  Paneles congelados")
-        
-        print("✅ Estilos aplicados correctamente")
 
     def _apply_excel_styles_to_new_rows(self, ws, df, start_row):
         if start_row > ws.max_row:
-            print("⚠️  No hay nuevas filas para aplicar estilos")
             return
-            
-        print(f"🎨 Aplicando estilos a nuevas filas desde {start_row} hasta {ws.max_row}")
-        
+                    
         light_gray_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
         white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
         
@@ -445,21 +391,11 @@ class ExcelGenerationThread(QThread):
                 else:
                     cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
         
-        print("✅ Estilos aplicados a nuevas filas")
-
     def _mark_orders_as_added_to_excel(self, order_ids):
-        try:
-            print(f"🏷️  Marcando {len(order_ids)} órdenes como añadidas al Excel...")
-            for order_id in order_ids:
-                update_data = {"added_to_excel": True}
-                response = http_put(f"{API_URL_ORDERS}{order_id}/update_order_data/", update_data)
-                if response and response.status_code == 200:
-                    print(f"✅ Orden {order_id} marcada como añadida al Excel")
-                else:
-                    error_msg = response.text if response else "Sin respuesta"
-                    print(f"❌ Error marcando orden {order_id}: {error_msg}")
-        except Exception as e:
-            print(f"❌ Error al marcar órdenes como añadidas al Excel: {e}")
+        for order_id in order_ids:
+            update_data = {"added_to_excel": True}
+            response = http_put(f"{API_URL_ORDERS}{order_id}/update_order_data/", update_data)
+
 
 
 class ExcelTab(QWidget):
@@ -648,14 +584,12 @@ class ExcelTab(QWidget):
 
 
     def _generate_excel(self):
-        print("🚀 Iniciando generación de Excel...")
         self.generate_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
 
         semana = int(self.semana_combo.currentText())
         excel_mode = 'new' if self.radio_nuevo.isChecked() else 'append'    
-        print(f"📋 Parámetros - Semana: {semana}, Modo: {excel_mode}")
 
         existing_file_path = None
         if excel_mode == 'append':
@@ -664,15 +598,12 @@ class ExcelTab(QWidget):
             if existing_files:
                 existing_files.sort(key=lambda x: os.path.getctime(os.path.join(desktop_path, x)), reverse=True)
                 existing_file_path = os.path.join(desktop_path, existing_files[0])
-                print(f"📂 Archivo existente encontrado: {existing_file_path}")
             else:
                 QMessageBox.warning(self, "Advertencia", 
                                   "No se encontró un archivo Excel existente. Se creará uno nuevo.")
                 excel_mode = 'new'
-                print("⚠️  No se encontró archivo existente, creando nuevo")
 
         try:
-            print("🌐 Obteniendo órdenes del servidor...")
             response = http_get(API_URL_ORDERS)
             
             if not response or response.status_code != 200:
@@ -680,7 +611,6 @@ class ExcelTab(QWidget):
                 self._reset_ui()
                 return
             orders_list = response.json()
-            print(f"📦 Total de órdenes obtenidas: {len(orders_list)}")
             
             if not orders_list:
                 QMessageBox.information(self, "Información", "No hay órdenes en el sistema.")
@@ -712,7 +642,6 @@ class ExcelTab(QWidget):
 
             new_orders = [order for order in orders_data if not order.get('added_to_excel', False)]
             
-            print(f"🆕 Órdenes nuevas (no añadidas al Excel): {len(new_orders)}")
             
             if not new_orders:
                 QMessageBox.information(self, "Información", 
@@ -721,7 +650,6 @@ class ExcelTab(QWidget):
                 self._reset_ui()
                 return
 
-            print("🔄 Iniciando thread de generación de Excel...")
             self.thread = ExcelGenerationThread(new_orders, semana, excel_mode, existing_file_path)
             self.thread.progress.connect(self._update_progress)
             self.thread.finished.connect(self._on_excel_generated)
@@ -729,7 +657,6 @@ class ExcelTab(QWidget):
             self.thread.start()
 
         except Exception as e:
-            print(f"❌ Error crítico: {e}")
             QMessageBox.critical(self, "Error", f"Error al procesar órdenes: {str(e)}")
             self._reset_ui()
 
@@ -745,17 +672,14 @@ class ExcelTab(QWidget):
         self.progress_bar.setValue(adjusted_value)
 
     def _on_excel_generated(self, file_path):
-        print(f"✅ Proceso completado. Archivo: {file_path}")
         self._reset_ui()
         
         try:
             wb = load_workbook(file_path)
             ws = wb.active
             order_count = ws.max_row - 1 
-            print(f"📊 Archivo contiene {order_count} órdenes")
         except Exception as e:
             order_count = "desconocido"
-            print(f"⚠️  Error contando órdenes: {e}")
         
         QMessageBox.information(
             self, 
@@ -765,7 +689,6 @@ class ExcelTab(QWidget):
         )
 
     def _on_excel_error(self, error_message):
-        print(f"❌ Error en generación de Excel: {error_message}")
         self._reset_ui()
         QMessageBox.critical(self, "Error", f"No se pudo generar el reporte Excel: {error_message}")
 
