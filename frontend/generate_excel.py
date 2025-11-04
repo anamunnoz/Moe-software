@@ -11,6 +11,7 @@ from PySide6.QtGui import QPixmap
 from utils import http_get, http_put
 from urls import API_URL_ORDERS
 from datetime import datetime 
+from openpyxl.utils import get_column_letter
 
 
 class ExcelGenerationThread(QThread):
@@ -103,22 +104,13 @@ class ExcelGenerationThread(QThread):
             desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
             
             if self.excel_mode == 'new':
-                current_month = datetime.now().month
-                month_str = f"{current_month:02d}"
-                month_names = {
-                    '01': 'enero', '02': 'febrero', '03': 'marzo', '04': 'abril',
-                    '05': 'mayo', '06': 'junio', '07': 'julio', '08': 'agosto',
-                    '09': 'septiembre', '10': 'octubre', '11': 'noviembre', '12': 'diciembre'
-                }
-                month_name = month_names.get(month_str, 'mes')
-                filename = f"LOTE {month_str}.xlsx"
+                filename = f"LOTE {datetime.now().month}.xlsx"
                 file_path = os.path.join(desktop_path, filename)               
                 self._save_excel_with_styles(df, file_path)
             else:
                 file_path = self.existing_file_path
                 self._append_to_existing_excel(df, file_path)
 
-            # self._mark_orders_as_added_to_excel(order_ids)
             self.finished.emit(file_path)
         except Exception as e:
             self.error.emit(str(e))
@@ -146,38 +138,45 @@ class ExcelGenerationThread(QThread):
             wb = load_workbook(file_path)
             ws = wb.active
             print(f"📂 Archivo existente cargado. Filas actuales: {ws.max_row}")
+
             existing_data = []
             headers = [cell.value for cell in ws[1]]
-            for row in ws.iter_rows(min_row=2, values_only=True):
-                if row[0] is not None:
-                    existing_data.append(row)
-            
+
+            data_end_row = 1
+            for row in range(2, ws.max_row + 1):
+                cell_value = ws[f'A{row}'].value
+                if cell_value and isinstance(cell_value, str) and cell_value.startswith('='):
+                    break
+                if cell_value is not None:
+                    data_end_row = row
+                    existing_row = []
+                    for col in range(1, len(headers) + 1):
+                        existing_row.append(ws.cell(row=row, column=col).value)
+                    existing_data.append(existing_row)
+
+            print(f"📊 Datos existentes encontrados: {len(existing_data)} filas (hasta fila {data_end_row})")
+
+            ws.delete_rows(1, ws.max_row)
+            print("🗑️  Todo el contenido del Excel eliminado")
+
             if existing_data:
-                print(f"📋 Leyendo {len(existing_data)} filas existentes...")
                 existing_df = pd.DataFrame(existing_data, columns=headers)
-
                 combined_df = pd.concat([existing_df, df], ignore_index=True)
-
-                print("🔀 Reordenando todos los datos (existentes + nuevos)...")
-                combined_df = combined_df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
-                print(f"✅ Datos combinados ordenados: {len(combined_df)} filas totales")
-                
-                ws.delete_rows(2, ws.max_row)  
-                
-
-                for _, row in combined_df.iterrows():
-                    ws.append(row.tolist())
-                
-                print(f"📝 Todos los datos reordenados y escritos: {len(combined_df)} filas")
-
-                self._add_footer_info(ws, combined_df)
-                
             else:
-                for _, row in df.iterrows():
-                    ws.append(row.tolist())
-                print(f"✅ Filas nuevas añadidas: {len(df)}")
-                self._add_footer_info(ws, df)
-                
+                combined_df = df
+
+            print("🔀 Reordenando todos los datos...")
+            combined_df = combined_df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
+            print(f"✅ Datos combinados ordenados: {len(combined_df)} filas totales")
+
+            ws.append(headers)
+            for _, row in combined_df.iterrows():
+                ws.append(row.tolist())
+            
+            print(f"📝 Todos los datos escritos: {len(combined_df)} filas")
+
+            self._add_footer_info(ws, combined_df)
+            
         else:
             wb = Workbook()
             ws = wb.active
@@ -190,8 +189,8 @@ class ExcelGenerationThread(QThread):
             print(f"✅ Filas añadidas al nuevo archivo: {len(df)}")
             self._add_footer_info(ws, df)
         
-        self._apply_excel_styles(ws, df)
-        
+        self._apply_excel_styles(ws, df if 'combined_df' not in locals() else combined_df)
+
         wb.save(file_path)
         
         print(f"💾 Archivo guardado exitosamente con todos los datos ordenados")
@@ -199,50 +198,51 @@ class ExcelGenerationThread(QThread):
     def _add_footer_info(self, ws, df):
         print("📝 Añadiendo fórmulas de Excel al final...")
         for _ in range(5):
-            ws.append([])
+            ws.append([None] * len(df.columns))
+        
         last_data_row = len(df) + 1
-
+        
         footer_row = [
-            f"=COUNTA(A2:A{last_data_row})",          
-            "",
-            f"=MAX(C2:C{last_data_row})-MIN(C2:C{last_data_row})",
             f"=COUNTA(A2:A{last_data_row})",
-            f"=SUM(E2:E{last_data_row})", 
-            "", 
-            f"=COUNTA(A2:A{last_data_row})", 
+            "",
+            f"=IF(COUNT(C2:C{last_data_row})>=2,MAX(C2:C{last_data_row})-MIN(C2:C{last_data_row}),0)",  # C: max-min con validación
+            f"=COUNTA(A2:A{last_data_row})",
+            f"=SUM(E2:E{last_data_row})",
+            "",
+            f"=COUNTA(A2:A{last_data_row})",
             f"=SUM(H2:H{last_data_row})",
-            f'=COUNTIF(I2:I{last_data_row},"<>")',    
-            f'=COUNTIF(J2:J{last_data_row},"<>")', 
-            f'=COUNTIF(K2:K{last_data_row},"<>")', 
-            f'=COUNTIF(L2:L{last_data_row},"<>")', 
-            f'=COUNTIF(M2:M{last_data_row},"<>")', 
-            ""                                        
+            f'=COUNTIF(I2:I{last_data_row},"<>")',
+            f'=COUNTIF(J2:J{last_data_row},"<>")',
+            f'=COUNTIF(K2:K{last_data_row},"<>")',
+            f'=COUNTIF(L2:L{last_data_row},"<>")',
+            f'=COUNTIF(M2:M{last_data_row},"<>")',
+            ""
         ]
         
         ws.append(footer_row)
 
         footer_formula_row = ws.max_row
         porcentaje_row = [
-            "", 
-            "",  
-            "",  
-            "",  
-            "",  
-            "",  
-            "", 
-            "",  
-            f'=IF($A${footer_formula_row}>1,I{footer_formula_row}/$A${footer_formula_row},0)',  
-            f'=IF($A${footer_formula_row}>1,J{footer_formula_row}/$A${footer_formula_row},0)', 
-            f'=IF($A${footer_formula_row}>1,K{footer_formula_row}/$A${footer_formula_row},0)', 
-            f'=IF($A${footer_formula_row}>1,L{footer_formula_row}/$A${footer_formula_row},0)', 
-            f'=IF($A${footer_formula_row}>1,M{footer_formula_row}/$A${footer_formula_row},0)',
-            "" 
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            f'=IF($A${footer_formula_row}>0,I{footer_formula_row}/$A${footer_formula_row},0)',
+            f'=IF($A${footer_formula_row}>0,J{footer_formula_row}/$A${footer_formula_row},0)',
+            f'=IF($A${footer_formula_row}>0,K{footer_formula_row}/$A${footer_formula_row},0)',
+            f'=IF($A${footer_formula_row}>0,L{footer_formula_row}/$A${footer_formula_row},0)',
+            f'=IF($A${footer_formula_row}>0,M{footer_formula_row}/$A${footer_formula_row},0)',
+            ""
         ]
         
         ws.append(porcentaje_row)
-        
         print(f"✅ Fórmulas de Excel añadidas al final")
         print(f"   📊 Referencia de datos: filas 2 a {last_data_row}")
+        print(f"   📏 Footer en filas: {footer_formula_row} (fórmulas) y {footer_formula_row + 1} (porcentajes)")
 
     def _apply_excel_styles(self, ws, df):
         if ws.max_row == 0:
@@ -268,8 +268,9 @@ class ExcelGenerationThread(QThread):
             top=Side(style='thin', color='CCCCCC'),
             bottom=Side(style='thin', color='CCCCCC')
         )
-        headers = list(df.columns)
         
+        headers = list(df.columns)
+
         for col_num in range(1, len(headers) + 1):
             cell = ws.cell(row=1, column=col_num)
             cell.font = header_font
@@ -277,25 +278,35 @@ class ExcelGenerationThread(QThread):
             cell.border = thin_border
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
-        last_data_row = len(df) + 1
+        last_data_row = len(df) + 1  
         footer_start_row = last_data_row + 6 
         footer_formula_row = footer_start_row
         footer_porcentaje_row = footer_start_row + 1
 
+        print(f"🎯 Estructura del archivo:")
+        print(f"   - Encabezado: fila 1")
+        print(f"   - Datos: filas 2 a {last_data_row} ({len(df)} órdenes)")
+        print(f"   - Líneas vacías: filas {last_data_row + 1} a {footer_start_row - 1}")
+        print(f"   - Footer fórmulas: fila {footer_formula_row}")
+        print(f"   - Footer porcentajes: fila {footer_porcentaje_row}")
 
         for row_idx in range(2, ws.max_row + 1):
             if row_idx == footer_porcentaje_row:
                 row_fill = porcentaje_fill
                 current_font = porcentaje_font
+                row_type = "PORCENTAJE"
             elif row_idx == footer_formula_row:
                 row_fill = footer_fill
                 current_font = footer_font
-            elif row_idx > last_data_row:
+                row_type = "FÓRMULA"
+            elif last_data_row < row_idx < footer_start_row:
                 row_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
                 current_font = None
+                row_type = "VACÍA"
             else:
                 row_fill = white_fill if row_idx % 2 == 0 else light_gray_fill
                 current_font = None
+                row_type = "DATOS"
             
             for col_num in range(1, len(headers) + 1):
                 cell = ws.cell(row=row_idx, column=col_num)
@@ -305,21 +316,14 @@ class ExcelGenerationThread(QThread):
                 if current_font:
                     cell.font = current_font
 
-
-                if row_idx == footer_porcentaje_row and col_num in [9, 10, 11, 12, 13]:
-                    cell.number_format = "0.0%"  
+                if row_type == "PORCENTAJE" and col_num in [9, 10, 11, 12, 13]:
+                    cell.number_format = "0.0%"
                     cell.alignment = Alignment(horizontal="center", vertical="center")
-                elif row_idx == footer_formula_row:
-                    if col_num == 8:  
+                elif row_type == "FÓRMULA":
+                    if col_num == 8:
                         cell.number_format = '"$"#,##0.00'
                         cell.alignment = Alignment(horizontal="right", vertical="center")
-                    elif col_num == 5:
-                        cell.number_format = "#,##0"
-                        cell.alignment = Alignment(horizontal="center", vertical="center")
-                    elif col_num in [1, 3, 4, 7]:  
-                        cell.number_format = "#,##0"
-                        cell.alignment = Alignment(horizontal="center", vertical="center")
-                    elif col_num in [9, 10, 11, 12, 13]:  
+                    elif col_num in [1, 3, 4, 5, 7, 9, 10, 11, 12, 13]:  # Números
                         cell.number_format = "#,##0"
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                     else:
@@ -336,21 +340,58 @@ class ExcelGenerationThread(QThread):
                     cell.number_format = "0.00"
                 else:
                     cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        print("📏 Ajustando anchos de columna...")
 
-        column_widths = {
-            'A': 8, 'B': 8, 'C': 8, 'D': 120, 'E': 10, 'F': 6, 'G': 15,
-            'H': 12, 'I': 10, 'J': 10, 'K': 10, 'L': 8, 'M': 12, 'N': 8
+        fixed_widths = {
+            'A': 8,
+            'B': 8,
+            'C': 12,
+            'E': 10,
+            'F': 8,
+            'G': 15,
+            'H': 12,
+            'I': 10,
+            'J': 10,
+            'K': 10,
+            'L': 8,
+            'M': 12,
+            'N': 8
         }
-        
-        for col, width in column_widths.items():
-            if col in ws.column_dimensions:
-                ws.column_dimensions[col].width = width
-        
 
+        for col, width in fixed_widths.items():
+            ws.column_dimensions[col].width = width
+            print(f"   📐 Columna {col}: {width} (ancho fijo)")
+
+            print("   📚 Ajustando automáticamente columna D (Libro)...")
+            column_d = ws['D']
+            max_length = 0
+
+            for cell in column_d:
+                try:
+                    if cell.value:
+                        cell_value = str(cell.value)
+                        if '\n' in cell_value:
+                            lines = cell_value.split('\n')
+                            max_line_length = max(len(line) for line in lines)
+                            cell_length = max_line_length
+                        else:
+                            cell_length = len(cell_value)
+                        
+                        if cell_length > max_length:
+                            max_length = cell_length
+                except:
+                    pass
+
+            adjusted_width = min(max_length + 2, 80) 
+            adjusted_width = max(adjusted_width, 20)
+
+            ws.column_dimensions['D'].width = adjusted_width
+            print(f"   📐 Columna D: {adjusted_width} (longitud máxima: {max_length})")
+                
         if last_data_row > 1:
             try:
                 ws.auto_filter.ref = f"A1:{chr(64 + len(headers))}{last_data_row}"
-                print("🔍 Filtros aplicados")
+                print("🔍 Filtros aplicados solo a datos")
             except Exception as e:
                 print(f"⚠️  Error aplicando auto_filter: {e}")
 
