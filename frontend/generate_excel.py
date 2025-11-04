@@ -117,8 +117,11 @@ class ExcelGenerationThread(QThread):
 
     def _save_excel_with_styles(self, df, file_path):
         wb = Workbook()
+
+
+
         ws = wb.active
-        ws.title = "Órdenes"
+        ws.title = str(datetime.now().month)
         headers = list(df.columns)
         ws.append(headers)
         for _, row in df.iterrows():
@@ -126,6 +129,13 @@ class ExcelGenerationThread(QThread):
 
         self._add_footer_info(ws, df) 
         self._apply_excel_styles(ws, df)
+
+        ws_gastos = wb.create_sheet("gastos")
+        # self._setup_gastos_sheet(ws_gastos)
+
+        ws_resumen = wb.create_sheet("resumen")
+        # self._setup_resumen_sheet(ws_resumen)
+    
         wb.save(file_path)
         
         print(f"✅ Excel NUEVO guardado en: {file_path}")
