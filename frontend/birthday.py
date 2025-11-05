@@ -25,26 +25,29 @@ class BirthdayTab(QWidget):
     def _setup_birthday_tab(self):
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setSpacing(20)
-        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(25)
+        main_layout.setContentsMargins(40, 35, 40, 35)
 
         # ---------------- ENCABEZADO ----------------
         header_layout = QHBoxLayout()
+        header_layout.setSpacing(15)
+
         header_icon = QLabel()
         header_icon.setPixmap(
             QPixmap("icons/birthday.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
-        header_title = QLabel("Cumpleaños de Hoy")
+
+        header_title = QLabel("Cumpleaños del Próximo Mes")
         header_title.setStyleSheet("""
-            font-size: 28px;
-            font-weight: bold;
-            color: #2c3e50;
+            font-size: 26px;
+            font-weight: 700;
+            color: #222;
         """)
-        
-        today_label = QLabel(f"{datetime.now().strftime('%d/%m/%Y')}")
+
+        today_label = QLabel(datetime.now().strftime("%d/%m/%Y"))
         today_label.setStyleSheet("""
-            font-size: 16px;
-            color: #7f8c8d;
+            font-size: 15px;
+            color: #666;
             font-weight: 500;
         """)
 
@@ -52,243 +55,232 @@ class BirthdayTab(QWidget):
         header_layout.addWidget(header_title)
         header_layout.addStretch()
         header_layout.addWidget(today_label)
-        
         main_layout.addLayout(header_layout)
 
         # ---------------- ÁREA DESPLAZABLE ----------------
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet("""
-            QScrollArea {
-                border: none;
-                background-color: transparent;
-            }
+            QScrollArea { border: none; background: transparent; }
             QScrollBar:vertical {
-                border: none;
-                background-color: #f8f9fa;
+                background: #f1f1f1;
                 width: 10px;
-                margin: 0px;
+                border-radius: 5px;
             }
             QScrollBar::handle:vertical {
-                background-color: #bdc3c7;
+                background-color: #b0b0b0;
                 border-radius: 5px;
-                min-height: 20px;
             }
             QScrollBar::handle:vertical:hover {
-                background-color: #95a5a6;
+                background-color: #8c8c8c;
             }
         """)
 
-        # Widget contenedor para las tarjetas
         self.cards_container = QWidget()
         self.cards_layout = QVBoxLayout(self.cards_container)
-        self.cards_layout.setSpacing(20)
+        self.cards_layout.setSpacing(18)
         self.cards_layout.setAlignment(Qt.AlignTop)
-        self.cards_layout.setContentsMargins(10, 10, 10, 10)
-
         scroll_area.setWidget(self.cards_container)
+
         main_layout.addWidget(scroll_area)
 
         # ---------------- BOTÓN ACTUALIZAR ----------------
-        refresh_btn = QPushButton("🔄 Actualizar Lista")
-        refresh_btn.setFixedHeight(40)
+        refresh_btn = QPushButton("Actualizar lista")
+        refresh_btn.setFixedHeight(42)
         refresh_btn.clicked.connect(self._load_birthday_clients)
         refresh_btn.setStyleSheet("""
             QPushButton {
-                background-color: #3498db;
-                color: white;
+                background-color: #2e2e2e;
+                color: #f5f5f5;
                 font-weight: 600;
-                padding: 8px 16px;
-                border-radius: 6px;
-                border: none;
                 font-size: 14px;
+                padding: 8px 20px;
+                border-radius: 6px;
+                border: 1px solid #444;
+                min-width: 180px;
             }
             QPushButton:hover {
-                background-color: #2980b9;
+                background-color: #3a3a3a;
             }
             QPushButton:pressed {
-                background-color: #21618c;
+                background-color: #1f1f1f;
             }
         """)
         main_layout.addWidget(refresh_btn, alignment=Qt.AlignCenter)
 
-        # Cargar clientes automáticamente al abrir la pestaña
         self._load_birthday_clients()
 
 
-
     def _load_birthday_clients(self):
-        # Limpiar tarjetas existentes
-        for i in reversed(range(self.cards_layout.count())): 
+        for i in reversed(range(self.cards_layout.count())):
             widget = self.cards_layout.itemAt(i).widget()
             if widget is not None:
                 widget.deleteLater()
 
         try:
-            print("🎂 Cargando clientes con cumpleaños...")
             response = http_get(API_URL_CLIENTES)
-            
             if not response or response.status_code != 200:
-                self._show_no_clients_message("Error al cargar clientes")
+                self._show_no_clients_message("❌ Error al cargar clientes.")
                 return
 
             clients = response.json()
-            print(f"📋 Total de clientes obtenidos: {len(clients)}")
-
-            # Fecha actual
             today = datetime.now()
-            current_day = today.day
-            current_month = today.month
-            current_year = today.year
+            day, month, year = today.day, today.month, today.year
 
-            # Calcular el mes siguiente y ajustar año si corresponde
-            next_month = current_month + 1
-            next_year = current_year
-            if next_month > 12:
-                next_month = 1
-                next_year += 1
-
-            # Verificar si el día actual existe en el próximo mes
-            last_day_next_month = calendar.monthrange(next_year, next_month)[1]
-            valid_day = min(current_day, last_day_next_month)
-
-            print(f"🗓 Buscando cumpleaños para el {valid_day:02d}/{next_month:02d}")
+            next_month = month + 1 if month < 12 else 1
+            next_year = year + 1 if next_month == 1 else year
+            last_day = calendar.monthrange(next_year, next_month)[1]
+            valid_day = min(day, last_day)
+            print('DIA', valid_day)
+            print('MES', next_month)
 
             birthday_clients = []
-
             for client in clients:
                 identity = client.get('identity', '')
                 if len(identity) >= 6:
                     try:
-                        # Extraer día y mes del número de identidad (posiciones 3-6)
-                        day = int(identity[4:6])
-                        month = int(identity[2:4])
+                        c_day = int(identity[4:6])
+                        c_month = int(identity[2:4])
 
-                        if day == valid_day and month == next_month:
+                        # --- Mes y año actual ---
+                        today = datetime.now()
+                        day, month, year = today.day, today.month, today.year
+
+                        # --- Mes siguiente ---
+                        next_month = month + 1 if month < 12 else 1
+                        next_year = year + 1 if next_month == 1 else year
+
+                        # --- Último día del mes actual y del siguiente ---
+                        last_day_current = calendar.monthrange(year, month)[1]
+                        last_day_next = calendar.monthrange(next_year, next_month)[1]
+
+                        # --- Día de inicio: el mismo día actual si existe, o el último del próximo mes ---
+                        start_day = min(day, last_day_next)
+
+                        # Si el mes cumple con el siguiente mes y el día está desde start_day hasta el último día del mes siguiente
+                        next_month = 3
+                        start_day = 28
+                        if c_month == next_month and c_day >= start_day:
                             birthday_clients.append(client)
-                    except (ValueError, IndexError):
+
+                    except Exception:
                         continue
 
-            print(f"🎉 Clientes que cumplen el {valid_day:02d}/{next_month:02d}: {len(birthday_clients)}")
-            
+
             if not birthday_clients:
-                self._show_no_clients_message(f"🎉 ¡No hay cumpleaños el {valid_day:02d}/{next_month:02d}!")
+                self._show_no_clients_message(
+                    f"🎉 No hay cumpleaños el {valid_day:02d}/{next_month:02d}."
+                )
                 return
 
-            # Crear tarjetas para cada cliente
             for client in birthday_clients:
                 self._create_client_card(client)
 
         except Exception as e:
-            print(f"❌ Error cargando cumpleaños: {e}")
-            self._show_no_clients_message("Error al cargar cumpleaños")
+            print(f"❌ Error: {e}")
+            self._show_no_clients_message("Error al cargar cumpleaños.")
 
     
 
     def _show_no_clients_message(self, message):
-        no_clients_label = QLabel(message)
-        no_clients_label.setStyleSheet("""
-            font-size: 18px;
+        label = QLabel(message)
+        label.setStyleSheet("""
+            font-size: 17px;
             color: #7f8c8d;
-            font-weight: 500;
             padding: 40px;
-            text-align: center;
         """)
-        no_clients_label.setAlignment(Qt.AlignCenter)
-        self.cards_layout.addWidget(no_clients_label)
+        label.setAlignment(Qt.AlignCenter)
+        self.cards_layout.addWidget(label)
 
     def _create_client_card(self, client):
-        # Crear tarjeta
-        card = QWidget()
+        card = QFrame()
         card.setStyleSheet("""
-            QWidget {
+            QFrame {
                 background-color: #ffffff;
-                border: 2px solid #e74c3c;
-                border-radius: 12px;
-                padding: 0px;
+                border: 1px solid #dcdcdc;
+                border-radius: 10px;
+                padding: 18px;
+            }
+            QFrame:hover {
+                background-color: #f7f7f7;
+                border-color: #b0b0b0;
             }
         """)
         card.setFixedHeight(120)
-        
-        card_layout = QHBoxLayout(card)
-        card_layout.setContentsMargins(20, 15, 20, 15)
-        card_layout.setSpacing(20)
 
-        # ---------------- INFORMACIÓN DEL CLIENTE ----------------
-        info_widget = QWidget()
-        info_layout = QVBoxLayout(info_widget)
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(8)
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(20, 10, 20, 10)
+        layout.setSpacing(20)
 
-        # Nombre del cliente (grande)
-        name_label = QLabel(client.get('name', 'Cliente'))
-        name_label.setStyleSheet("""
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
+        # --- Info ---
+        info = QWidget()
+        info_layout = QVBoxLayout(info)
+        info_layout.setSpacing(6)
+
+        name = QLabel(client.get('name', 'Cliente'))
+        name.setStyleSheet("""
+            font-size: 18px;
+            font-weight: 700;
+            color: #222;
         """)
-        name_label.setWordWrap(True)
 
-        # Información adicional (pequeña)
-        details_layout = QHBoxLayout()
-        details_layout.setSpacing(15)
+        details = QHBoxLayout()
+        details.setSpacing(15)
 
-        identity = client.get('identity', '')
-        phone = client.get('phone_number', 'No disponible')
-        
-        identity_label = QLabel(f"🆔 {identity}")
-        identity_label.setStyleSheet("font-size: 13px; color: #7f8c8d;")
+        identity = QLabel(f"🆔 {client.get('identity', '—')}")
+        phone = QLabel(f"📞 {client.get('phone_number', '—')}")
+        for label in (identity, phone):
+            label.setStyleSheet("font-size: 13px; color: #555;")
+        details.addWidget(identity)
+        details.addWidget(phone)
+        details.addStretch()
 
-        phone_label = QLabel(f"📞 {phone}")
-        phone_label.setStyleSheet("font-size: 13px; color: #7f8c8d;")
+        info_layout.addWidget(name)
+        info_layout.addLayout(details)
 
-        details_layout.addWidget(identity_label)
-        details_layout.addWidget(phone_label)
-        details_layout.addStretch()
-
-        info_layout.addWidget(name_label)
-        info_layout.addLayout(details_layout)
-
-        # ---------------- BOTÓN COPIAR ----------------
-        copy_btn = QPushButton("📋 Copiar Mensaje")
-        copy_btn.setFixedSize(120, 40)
+        # --- Botón copiar ---
+        copy_btn = QPushButton("Copiar mensaje")
+        copy_btn.setFixedSize(150, 36)
         copy_btn.clicked.connect(lambda: self._copy_birthday_message(client))
         copy_btn.setStyleSheet("""
             QPushButton {
-                background-color: #27ae60;
-                color: white;
+                background-color: #f2f2f2;
+                color: #222;
                 font-weight: 600;
-                padding: 8px 12px;
                 border-radius: 6px;
-                border: none;
-                font-size: 12px;
+                border: 1px solid #ccc;
+                font-size: 13px;
             }
             QPushButton:hover {
-                background-color: #229954;
+                background-color: #e0e0e0;
             }
             QPushButton:pressed {
-                background-color: #1e8449;
+                background-color: #cfcfcf;
             }
         """)
 
-        card_layout.addWidget(info_widget)
-        card_layout.addWidget(copy_btn)
+        layout.addWidget(info)
+        layout.addStretch()
+        layout.addWidget(copy_btn)
 
         self.cards_layout.addWidget(card)
 
-    def _copy_birthday_message(self, client):
-        client_name = client.get('name', 'Cliente')
-        message = f"""🎉 ¡FELIZ CUMPLEAÑOS {client_name.upper()}! 🎉
-        ¡En nombre de todo nuestro equipo queremos desearte un maravilloso día lleno de alegría y bendiciones! 🎂🎁
-        Para hacer tu día aún más especial, te regalamos un *10% DE DESCUENTO* en cualquier pedido que realices hoy. ¡Aprovecha esta oportunidad única! 💫
-        ¡Que tengas un día increíble! 🥳✨"""
 
-        clipboard = QApplication.clipboard()
-        clipboard.setText(message)
-        
+    def _copy_birthday_message(self, client):
+        name = client.get('name', 'Cliente')
+        message = (
+            f"🎉 ¡Hola {name.split()[0]}! 🎂\n\n"
+            "🎈 Queremos adelantarte nuestros mejores deseos por tu cumpleaños. "
+            "Gracias por ser parte de nuestra familia 💛.\n\n"
+            "Para celebrarlo, te regalamos un *10% de descuento* en tu próximo pedido. "
+            "🎁 Válido durante todo el mes de tu cumpleaños.\n\n"
+            "¡Que tengas un día increíble lleno de alegría y cosas lindas! 🥳"
+        )
+
+        QApplication.clipboard().setText(message)
         QMessageBox.information(
-            self, 
-            "Mensaje Copiado", 
-            f"✅ Mensaje de felicitación para {client_name} copiado al portapapeles.\n\n"
+            self,
+            "Mensaje copiado",
+            f"✅ Mensaje personalizado para {name} copiado al portapapeles."
         )
         
