@@ -13,6 +13,7 @@ from order import OrderWidget
 from production import ProductionStatusTab
 from vouchers import VouchersTab
 from generate_excel import ExcelTab
+from birthday import BirthdayTab
 
 class SidebarButton(QPushButton):
     def __init__(self, icon_path, text, parent=None):
@@ -94,6 +95,7 @@ class Sidebar(QWidget):
         self.btn_production = SidebarButton("icons/selected_book.png", "Estado de producción")
         self.btn_vauchers = SidebarButton("icons/tickets.png", "Generar vales")
         self.btn_excel = SidebarButton("icons/xls.png", "Generar excel")
+        self.btn_birthday = SidebarButton("icons/cake.png", "Cumpleaños de clientes")
 
         layout.addWidget(self.btn_precio)
         layout.addWidget(self.btn_ordenes)
@@ -103,6 +105,7 @@ class Sidebar(QWidget):
         layout.addWidget(self.btn_excel)
         layout.addWidget(self.btn_books)
         layout.addWidget(self.btn_gestion)
+        layout.addWidget(self.btn_birthday)
         
 
         layout.addStretch()
@@ -155,6 +158,7 @@ class MainWindow(QMainWindow):
         self.production_page = ProductionStatusTab()
         self.vauchers_page = VouchersTab()
         self.generate_excel_page = ExcelTab()
+        self.birthday_page = BirthdayTab()
         self.default_page = QWidget()
         
 
@@ -170,6 +174,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.production_page)
         self.stack.addWidget(self.vauchers_page)
         self.stack.addWidget(self.generate_excel_page)
+        self.stack.addWidget(self.birthday_page)
 
 
 
@@ -181,6 +186,8 @@ class MainWindow(QMainWindow):
         self.sidebar.btn_production.clicked.connect(lambda: self.stack.setCurrentWidget(self.production_page))
         self.sidebar.btn_vauchers.clicked.connect(lambda: self.stack.setCurrentWidget(self.vauchers_page))
         self.sidebar.btn_excel.clicked.connect(lambda: self.stack.setCurrentWidget(self.generate_excel_page))
+        self.sidebar.btn_birthday.clicked.connect(lambda: self.stack.setCurrentWidget(self.birthday_page))
+
 
 
 
