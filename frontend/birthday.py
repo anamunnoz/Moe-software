@@ -13,6 +13,8 @@ from utils import http_get, http_put
 from urls import API_URL_ORDERS, API_URL_CLIENTES
 from datetime import datetime 
 from openpyxl.utils import get_column_letter
+from datetime import datetime, timedelta
+import calendar
 
 
 class BirthdayTab(QWidget):
@@ -113,6 +115,8 @@ class BirthdayTab(QWidget):
         # Cargar clientes automáticamente al abrir la pestaña
         self._load_birthday_clients()
 
+
+
     def _load_birthday_clients(self):
         # Limpiar tarjetas existentes
         for i in reversed(range(self.cards_layout.count())): 
@@ -131,33 +135,44 @@ class BirthdayTab(QWidget):
             clients = response.json()
             print(f"📋 Total de clientes obtenidos: {len(clients)}")
 
-            # Obtener fecha actual
+            # Fecha actual
             today = datetime.now()
             current_day = today.day
             current_month = today.month
+            current_year = today.year
+
+            # Calcular el mes siguiente y ajustar año si corresponde
+            next_month = current_month + 1
+            next_year = current_year
+            if next_month > 12:
+                next_month = 1
+                next_year += 1
+
+            # Verificar si el día actual existe en el próximo mes
+            last_day_next_month = calendar.monthrange(next_year, next_month)[1]
+            valid_day = min(current_day, last_day_next_month)
+
+            print(f"🗓 Buscando cumpleaños para el {valid_day:02d}/{next_month:02d}")
 
             birthday_clients = []
-            
+
             for client in clients:
                 identity = client.get('identity', '')
                 if len(identity) >= 6:
                     try:
-                        # Extraer día y mes (posiciones 3-6: índice 2-5)
+                        # Extraer día y mes del número de identidad (posiciones 3-6)
                         day = int(identity[4:6])
                         month = int(identity[2:4])
 
-                        print("day", day)
-                        print('month', month)
-                        
-                        if day == current_day and month == current_month:
+                        if day == valid_day and month == next_month:
                             birthday_clients.append(client)
                     except (ValueError, IndexError):
                         continue
 
-            print(f"🎉 Clientes que cumplen hoy: {len(birthday_clients)}")
+            print(f"🎉 Clientes que cumplen el {valid_day:02d}/{next_month:02d}: {len(birthday_clients)}")
             
             if not birthday_clients:
-                self._show_no_clients_message("🎉 ¡No hay cumpleaños hoy!")
+                self._show_no_clients_message(f"🎉 ¡No hay cumpleaños el {valid_day:02d}/{next_month:02d}!")
                 return
 
             # Crear tarjetas para cada cliente
@@ -167,6 +182,8 @@ class BirthdayTab(QWidget):
         except Exception as e:
             print(f"❌ Error cargando cumpleaños: {e}")
             self._show_no_clients_message("Error al cargar cumpleaños")
+
+    
 
     def _show_no_clients_message(self, message):
         no_clients_label = QLabel(message)
