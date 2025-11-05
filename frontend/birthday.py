@@ -21,7 +21,7 @@ class BirthdayTab(QWidget):
         main_layout.setSpacing(25)
         main_layout.setContentsMargins(40, 35, 40, 35)
 
-        # ---------------- ENCABEZADO ----------------
+        #? ---------------- ENCABEZADO ----------------
         header_layout = QHBoxLayout()
         header_layout.setSpacing(15)
 
@@ -29,7 +29,6 @@ class BirthdayTab(QWidget):
         header_icon.setPixmap(
             QPixmap("icons/birthday.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
-
         header_title = QLabel("Cumpleaños del Próximo Mes")
         header_title.setStyleSheet("""
             font-size: 26px;
@@ -42,7 +41,7 @@ class BirthdayTab(QWidget):
         header_layout.addStretch()
         main_layout.addLayout(header_layout)
 
-        # ---------------- ÁREA DESPLAZABLE ----------------
+        #? ---------------- ÁREA DESPLAZABLE ----------------
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet("""
@@ -68,7 +67,7 @@ class BirthdayTab(QWidget):
         scroll_area.setWidget(self.cards_container)
         main_layout.addWidget(scroll_area)
 
-        # ---------------- BOTÓN ACTUALIZAR ----------------
+        #? ---------------- BOTÓN ACTUALIZAR ----------------
         refresh_btn = QPushButton("Actualizar lista")
         refresh_btn.setFixedHeight(42)
         refresh_btn.clicked.connect(self._load_birthday_clients)
@@ -110,36 +109,23 @@ class BirthdayTab(QWidget):
                 identity = client.get('identity', '')
                 if len(identity) >= 6:
                     try:
-                        # Extraer día y mes de la cédula
                         c_day = int(identity[4:6])
                         c_month = int(identity[2:4])
-
-                        # Crear una fecha de cumpleaños para este año
                         bday = datetime(year=today.year, month=c_month, day=c_day)
-
-                        # Si el cumpleaños ya pasó este año, tomar el del próximo año
                         if bday < today:
                             bday = datetime(year=today.year + 1, month=c_month, day=c_day)
-
-                        # Restar 30 días
                         reminder_date = bday - timedelta(days=30)
-
-                        # Comparar solo mes y día (sin hora)
                         if reminder_date.month == today.month and reminder_date.day == today.day:
                             birthday_clients.append(client)
 
                     except Exception:
                         continue
-
             if not birthday_clients:
                 self._show_no_clients_message("🎉 No hay cumpleaños próximos.")
                 return
-
             for client in birthday_clients:
                 self._create_client_card(client)
-
         except Exception as e:
-            print(f"❌ Error: {e}")
             self._show_no_clients_message("Error al cargar cumpleaños.")
 
     def _show_no_clients_message(self, message):
@@ -170,7 +156,7 @@ class BirthdayTab(QWidget):
         layout.setContentsMargins(20, 10, 20, 10)
         layout.setSpacing(20)
 
-        # --- Información del cliente ---
+        #? --- Información del cliente ---
         info = QWidget()
         info_layout = QVBoxLayout(info)
         info_layout.setSpacing(8)
@@ -182,7 +168,7 @@ class BirthdayTab(QWidget):
             color: #1c1c1c;
         """)
 
-        # --- Cumpleaños con icono ---
+        #? --- Cumpleaños ---
         birthday_row = QHBoxLayout()
         birthday_row.setSpacing(10)
         birthday_icon = QLabel()
@@ -208,7 +194,7 @@ class BirthdayTab(QWidget):
         birthday_row.addWidget(birthday_label)
         birthday_row.addStretch()
 
-        # --- Teléfono con icono ---
+        #? --- Teléfono ---
         phone_row = QHBoxLayout()
         phone_row.setSpacing(10)
         phone_icon = QLabel()
@@ -232,7 +218,7 @@ class BirthdayTab(QWidget):
         info_layout.addLayout(birthday_row)
         info_layout.addLayout(phone_row)
 
-        # --- Botón de acción (gris intermedio) ---
+        #? --- Botón de acción ---
         copy_btn = QPushButton("Copiar mensaje")
         copy_btn.setFixedSize(170, 40)
         copy_btn.clicked.connect(lambda: self._copy_birthday_message(client))
@@ -258,8 +244,6 @@ class BirthdayTab(QWidget):
         layout.addWidget(copy_btn)
         self.cards_layout.addWidget(card)
 
-
-
     def _copy_phone(self, phone):
         if phone and phone != "—":
             QApplication.clipboard().setText(phone)
@@ -270,13 +254,14 @@ class BirthdayTab(QWidget):
         name = client.get('name', 'Cliente').split()[0]
         message = (
             f"🎉 ¡Hola {name}! 🎂\n\n"
-            "Falta un mes para tu cumpleaños 🎈 Si haces tu pedido hoy, "
-            "tendrás tu libro listo justo para celebrarlo 🎁.\n\n"
-            "Por eso hoy tienes un *10% de descuento especial* 💛."
+            "¡Falta un mes para tu cumpleaños! 🥰\n"
+            "Queremos que llegues a tu día con algo especial hecho para ti 💛\n"
+            "Por eso hoy te damos un *10% de descuento exclusivo*🎁\n\n"
+            "Así tendrás tu libro listo justo a tiempo para celebrarte 🎈"
         )
         QApplication.clipboard().setText(message)
         QMessageBox.information(
             self,
             "Mensaje copiado",
-            f"✅ Mensaje personalizado para {name} copiado al portapapeles."
+            f"Mensaje personalizado para {name} copiado al portapapeles."
         )
