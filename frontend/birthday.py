@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QCursor
 from utils import http_get
 from urls import API_URL_CLIENTES
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
 
 
@@ -104,23 +104,30 @@ class BirthdayTab(QWidget):
 
             clients = response.json()
             today = datetime.now()
-            day, month, year = today.day, today.month, today.year
-
-            next_month = month + 1 if month < 12 else 1
-            next_year = year + 1 if next_month == 1 else year
-
-            last_day_next = calendar.monthrange(next_year, next_month)[1]
-            start_day = min(day, last_day_next)
 
             birthday_clients = []
             for client in clients:
                 identity = client.get('identity', '')
                 if len(identity) >= 6:
                     try:
+                        # Extraer día y mes de la cédula
                         c_day = int(identity[4:6])
                         c_month = int(identity[2:4])
-                        if c_month == next_month and c_day >= start_day:
+
+                        # Crear una fecha de cumpleaños para este año
+                        bday = datetime(year=today.year, month=c_month, day=c_day)
+
+                        # Si el cumpleaños ya pasó este año, tomar el del próximo año
+                        if bday < today:
+                            bday = datetime(year=today.year + 1, month=c_month, day=c_day)
+
+                        # Restar 30 días
+                        reminder_date = bday - timedelta(days=30)
+
+                        # Comparar solo mes y día (sin hora)
+                        if reminder_date.month == today.month and reminder_date.day == today.day:
                             birthday_clients.append(client)
+
                     except Exception:
                         continue
 
