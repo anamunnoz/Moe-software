@@ -4,7 +4,11 @@ from rest_framework.response import Response
 from .models import Client, Delivery, Book, Additive, Requested_book, Book_on_order, Order, Requested_book_additive  
 from .serializers import ClientSerializer, DeliverySerializer, BookSerializer, AdditiveSerializer, RequestedBookSerializer, BookOnOrderSerializer, OrderSerializer, RequestedBookAdditiveSerializer  
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
+from datetime import datetime, timedelta
+from django.utils import timezone
+from collections import Counter
+
 #? ----------------------------
 #? ClientViewSet
 #? ----------------------------
@@ -519,3 +523,109 @@ class RequestedBookAdditiveViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+
+#? ----------------------------
+#? Estadísticas Dashboard
+#? ----------------------------
+class DashboardStatsViewSet(viewsets.ViewSet):
+    
+    @action(detail=False, methods=['get'], url_path='main_stats')
+    def main_stats(self, request):
+        try:
+            total_orders = Order.objects.count()
+            total_clients = Client.objects.count()
+            total_books_ordered = Book_on_order.objects.aggregate(total=Sum('quantity'))['total'] or 0
+            
+            today = timezone.now().date()
+            current_year = today.year
+            current_month = today.month
+            month_str = str(current_month).zfill(2)
+            
+            month_orders = Order.objects.filter(
+                order_date__startswith=f"{current_year}-{month_str}"
+            ).count()
+            
+            return Response({
+                'total_orders': total_orders,
+                'total_clients': total_clients,
+                'month_orders': month_orders,
+                'total_books_ordered': total_books_ordered 
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo estadísticas: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='monthly_orders_chart')
+    def monthly_orders_chart(self, request):
+        try:
+            today = timezone.now().date()
+            current_year = today.year
+            current_month = today.month
+            month_str = str(current_month).zfill(2)
+            orders = Order.objects.filter(
+                order_date__startswith=f"{current_year}-{month_str}"
+            ).values('order_date')
+
+            daily_counts = {}
+            for order in orders:
+                try:
+                    order_date = datetime.strptime(order['order_date'], '%Y-%m-%d').date()
+                    day_str = order_date.strftime('%Y-%m-%d')
+                    daily_counts[day_str] = daily_counts.get(day_str, 0) + 1
+                except ValueError:
+                    continue
+            
+
+            first_day_month = today.replace(day=1)
+            if today.month == 12:
+                last_day_month = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+            else:
+                last_day_month = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
+            
+            chart_data = []
+            current_date = first_day_month
+            while current_date <= last_day_month:
+                day_str = current_date.strftime('%Y-%m-%d')
+                chart_data.append({
+                    'date': day_str,
+                    'orders': daily_counts.get(day_str, 0),
+                    'day': current_date.day
+                })
+                current_date += timedelta(days=1)
+            
+            return Response({'chart_data': chart_data})
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo datos de gráfica: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='top_books_month')
+    def top_books_month(self, request):
+        try:
+            today = timezone.now().date()
+            current_year = today.year
+            current_month = today.month
+            month_str = str(current_month).zfill(2)
+            book_orders = Book_on_order.objects.filter(
+                idOrder__order_date__startswith=f"{current_year}-{month_str}"
+            ).select_related('idRequested_book__idBook')
+
+            book_counts = Counter()
+            for book_order in book_orders:
+                book_title = book_order.idRequested_book.idBook.title
+                book_counts[book_title] += book_order.quantity
+
+            top_books = book_counts.most_common(5)
+            result = [{'book': book, 'orders': count} for book, count in top_books]
+            
+            return Response({'top_books': result})
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo top libros: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+            

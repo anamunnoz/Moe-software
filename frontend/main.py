@@ -14,6 +14,7 @@ from production import ProductionStatusTab
 from vouchers import VouchersTab
 from generate_excel import ExcelTab
 from birthday import BirthdayTab
+from stats_card import DashboardWidget
 
 class SidebarButton(QPushButton):
     def __init__(self, icon_path, text, parent=None):
@@ -159,13 +160,15 @@ class MainWindow(QMainWindow):
         self.vauchers_page = VouchersTab()
         self.generate_excel_page = ExcelTab()
         self.birthday_page = BirthdayTab()
-        self.default_page = QWidget()
+        # self.default_page = QWidget()
+        self.dashboard_page = DashboardWidget()
         
 
 
-        self.default_page.setStyleSheet("background-color: #FFFFFF;")
+        self.dashboard_page.setStyleSheet("background-color: #FFFFFF;")
 
-        self.stack.addWidget(self.default_page)
+        # self.stack.addWidget(self.default_page)
+        self.stack.addWidget(self.dashboard_page)
         self.stack.addWidget(self.consultas_page)
         self.stack.addWidget(self.books_page)
         self.stack.addWidget(self.client_page)
@@ -189,6 +192,10 @@ class MainWindow(QMainWindow):
         self.sidebar.btn_birthday.clicked.connect(lambda: self.stack.setCurrentWidget(self.birthday_page))
 
 
+        self.sidebar.btn_home = SidebarButton("icons/home.png", "Inicio")
+        self.sidebar.layout().insertWidget(1, self.sidebar.btn_home)  # Después del header
+        self.sidebar.btn_home.clicked.connect(lambda: self.stack.setCurrentWidget(self.dashboard_page))
+
 
 
         layout.addWidget(self.sidebar)
@@ -196,7 +203,16 @@ class MainWindow(QMainWindow):
         layout.setStretch(1, 1)
 
         self.setCentralWidget(container)
-        self.stack.setCurrentWidget(self.default_page)
+        self.stack.setCurrentWidget(self.dashboard_page)
+        self.stack.setCurrentWidget(self.dashboard_page)
+
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.stack.setCurrentWidget(self.dashboard_page)
+            event.accept()
+        else:
+            super().keyPressEvent(event)
 
 
 if __name__ == "__main__":
