@@ -528,28 +528,28 @@ class RequestedBookAdditiveViewSet(viewsets.ModelViewSet):
 #? Estadísticas Dashboard
 #? ----------------------------
 class DashboardStatsViewSet(viewsets.ViewSet):
-    
     @action(detail=False, methods=['get'], url_path='main_stats')
     def main_stats(self, request):
         try:
             total_orders = Order.objects.count()
             total_clients = Client.objects.count()
             total_books_ordered = Book_on_order.objects.aggregate(total=Sum('quantity'))['total'] or 0
-            
+
             today = timezone.now().date()
             current_year = today.year
             current_month = today.month
             month_str = str(current_month).zfill(2)
-            
-            month_orders = Order.objects.filter(
-                order_date__startswith=f"{current_year}-{month_str}"
-            ).count()
-            
+
+            month_orders_qs = Order.objects.filter(order_date__startswith=f"{current_year}-{month_str}")
+            month_orders = month_orders_qs.count()
+            month_income = month_orders_qs.aggregate(total=Sum('total_price'))['total'] or 0
+
             return Response({
                 'total_orders': total_orders,
                 'total_clients': total_clients,
                 'month_orders': month_orders,
-                'total_books_ordered': total_books_ordered 
+                'total_books_ordered': total_books_ordered,
+                'month_income': round(month_income, 2)
             })
         except Exception as e:
             return Response(

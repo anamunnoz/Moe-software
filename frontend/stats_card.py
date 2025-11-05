@@ -5,6 +5,7 @@ from PySide6.QtGui import QPixmap, QPen, QColor, QPainter
 from PySide6.QtCore import Qt, QDateTime
 from datetime import datetime
 import requests
+from urls import API_URL_DASHBOARD
 
 class StatCard(QFrame):
     def __init__(self, title, value, icon_path, color="#3498db"):
@@ -138,15 +139,16 @@ class DashboardWidget(QWidget):
         self.clients_card = StatCard("Total clientes", "0", "icons/client.png", "#3498db")
         self.month_orders_card = StatCard("Pedidos este mes", "0", "icons/calendar.png", "#27ae60")
         self.books_ordered_card = StatCard("Libros pedidos", "0", "icons/bookcount.png", "#f39c12")
+        self.month_income_card = StatCard("Ingresos del mes", "$0", "icons/price.png", "#16a085")
 
         layout.addStretch()
         layout.addWidget(self.orders_card)
         layout.addWidget(self.clients_card)
         layout.addWidget(self.month_orders_card)
         layout.addWidget(self.books_ordered_card)
+        layout.addWidget(self.month_income_card)
         layout.addStretch()
         return widget
-
 
     def create_charts_section(self):
         widget = QWidget()
@@ -169,7 +171,7 @@ class DashboardWidget(QWidget):
             }
         """)
         chart_layout = QVBoxLayout(chart_container)
-        chart_layout.setContentsMargins(15, 5, 15, 10)
+        chart_layout.setContentsMargins(15, 0, 15, 5)
         chart_layout.setSpacing(0)
 
         # --- Título con icono ---
@@ -199,7 +201,7 @@ class DashboardWidget(QWidget):
         title_layout.addStretch()
 
         self.chart_view = QChartView()
-        self.chart_view.setFixedHeight(300)
+        self.chart_view.setFixedHeight(400)
         self.chart_view.setStyleSheet("""
             QChartView {
                 margin: 0px;
@@ -246,7 +248,7 @@ class DashboardWidget(QWidget):
         title_layout.addWidget(icon_label)
         title_layout.addWidget(books_title)
         title_layout.addStretch()
-s
+
         self.books_list = QListWidget()
         self.books_list.setStyleSheet("""
             QListWidget {
@@ -272,7 +274,7 @@ s
 
     def load_statistics(self):
         try:
-            response = requests.get('http://localhost:8000/api/dashboard/main_stats/')
+            response = requests.get(f'{API_URL_DASHBOARD}main_stats/')
             if response.status_code == 200:
                 data = response.json()
                 current_month = datetime.now().month
@@ -285,7 +287,10 @@ s
                 self.orders_card.set_value(data['total_orders'])
                 self.clients_card.set_value(data['total_clients'])
                 self.month_orders_card.set_value(month_total)
-                self.books_ordered_card.set_value(data.get('total_books_ordered', 0))  # 🔹 NUEVO
+                self.books_ordered_card.set_value(data.get('total_books_ordered', 0))
+                month_income = data.get('month_income', 0)
+                self.month_income_card.set_value(f"${month_income:,.2f}")
+
             self.load_chart_data()
             self.load_top_books()
         except Exception as e:
@@ -293,7 +298,7 @@ s
 
     def load_chart_data(self):
         try:
-            response = requests.get('http://localhost:8000/api/dashboard/monthly_orders_chart/')
+            response = requests.get(f'{API_URL_DASHBOARD}monthly_orders_chart/')
             if response.status_code == 200:
                 data = response.json()
                 self.create_chart(data['chart_data'])
@@ -302,7 +307,7 @@ s
 
     def load_top_books(self):
         try:
-            response = requests.get('http://localhost:8000/api/dashboard/top_books_month/')
+            response = requests.get(f'{API_URL_DASHBOARD}top_books_month/')
             if response.status_code == 200:
                 data = response.json()
                 self.books_list.clear()
@@ -378,7 +383,5 @@ s
         axis_y.setTitleText("")
         chart.addAxis(axis_y, Qt.AlignLeft)
         series.attachAxis(axis_y)
-
         self.chart_view.setRenderHint(QPainter.Antialiasing, True)
-
         self.chart_view.setChart(chart)
