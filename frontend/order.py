@@ -17,10 +17,14 @@ from urls import (
 )
 from datetime import datetime
 from price.get_rates import convert_to_currency
+from price.price import calculate_price
 from price_service import PriceService
 import json
 import requests
 import traceback
+
+with open('./price/fabrication.json', 'r', encoding='utf-8') as f:
+    costs = json.load(f)
 
 #? ------------------------------
 #? Diálogo para crear nuevo cliente
@@ -454,12 +458,26 @@ class OrderWidget(QWidget):
                 if additive['idAdditive'] == add_id:
                     book_additives.append(additive)
                     break
-        return PriceService.calculate_book_price(
-            book_data=book_data,
-            additives_data=book_additives,
-            discount=book_entry.get('discount', 0),
-            quantity=book_entry.get('quantity', 1)
-        )
+        caratula_price = 0
+        other_additives_price = 0
+        for additive in book_additives:
+            if "carátula" in additive.get("name", "").lower():
+                caratula_price = additive.get("price", 0)
+            else:
+                other_additives_price += additive.get("price", 0)
+                
+        number_of_pages = book_data.get('number_pages', 0)
+        color_pages = book_data.get("color_pages", 0)
+        printing_format = book_data.get("printing_format", "NORMAL")
+        book_base_price = calculate_price(number_of_pages, color_pages, printing_format, costs)
+
+        total_price_before_discount = book_base_price + caratula_price + other_additives_price
+        discount_percentage = book_entry.get('discount', 0)
+        if discount_percentage > 0:
+            total_price_before_discount *= (1 - discount_percentage / 100)
+        final_price = total_price_before_discount * book_entry.get('quantity', 1)
+        
+        return final_price
 
     def _update_delivery_date_add(self):
         today = QDate.currentDate()
@@ -592,6 +610,9 @@ class OrderWidget(QWidget):
             delivery_price = float(delivery_text) if delivery_text else 0
         except ValueError:
             delivery_price = 0
+
+        total_books_price = sum(self._calculate_book_price(book) for book in self.selected_books)
+        total_order_price = total_books_price + delivery_price
         
         order_calculation = PriceService.calculate_order_price(
             selected_books=self.selected_books,
@@ -666,10 +687,12 @@ class OrderWidget(QWidget):
                             caratula_price = additive['price']
                         elif additive["name"].lower().startswith("servicio"):
                             service_additives.append(additive)
-            
-            base_price = book_data.get('number_pages', 0) if book_data else 0
 
-            precio_regular = base_price + caratula_price
+            number_of_pages = book_data.get('number_pages', 0)
+            color_pages = book_data.get("color_pages", 0)
+            printing_format = book_data.get("printing_format", "NORMAL")
+            precio_regular = calculate_price(number_of_pages, color_pages, printing_format, costs) + caratula_price
+
             cup_price = convert_to_currency(precio_regular, 'USD', 'CUP')
             mlc_price = convert_to_currency(precio_regular, 'USD', 'MLC')
             
@@ -1515,8 +1538,11 @@ class OrderWidget(QWidget):
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
             
-            base_price = book.get('number_pages', 0)
-            precio_base_caratula = base_price + caratula_price
+            number_of_pages = book.get('number_pages', 0)
+            color_pages = book.get("color_pages", 0)
+            printing_format = book.get("printing_format", "NORMAL")
+            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format, costs) + caratula_price
+
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
             mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
             
