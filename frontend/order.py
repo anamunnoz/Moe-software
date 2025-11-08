@@ -58,6 +58,41 @@ class NewClientDialog(QDialog):
             "phone_number": self.phone_edit.text().strip()
         }
 
+#? --------------------------------
+#? Diálogo para libros de una orden
+#? --------------------------------
+class BookItemWidget(QWidget):
+    def __init__(self, book_entry):
+        super().__init__()
+        self.book_entry = book_entry
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setSpacing(3)
+
+        title_label = QLabel(f"<b>{book_entry['title']}</b> — {book_entry['author']}")
+        title_label.setStyleSheet("font-size: 14px; color: #333;")
+        layout.addWidget(title_label)
+
+        quantity_discount_label = QLabel(f"Cantidad: {book_entry['quantity']} | Descuento: {book_entry['discount']}%")
+        quantity_discount_label.setStyleSheet("font-size: 12px; color: #555;")
+        layout.addWidget(quantity_discount_label)
+
+        additives = book_entry.get("additives_names", [])
+        if additives:
+            additives_label = QLabel("Servicios extras: " + ", ".join(additives))
+
+            additives_label.setStyleSheet("font-size: 12px; color: #777; font-style: italic;")
+            layout.addWidget(additives_label)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #F9F9F9;
+                border: none;
+                border-radius: 6px;
+            }
+        """)
+
 class OrderWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -352,7 +387,9 @@ class OrderWidget(QWidget):
 
         books_layout.addWidget(QLabel("Libros añadidos:"))
         self.add_selected_books_list = QListWidget()
-        self.add_selected_books_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.add_selected_books_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.add_selected_books_list.setMinimumHeight(250)
+        self.add_selected_books_list.setSpacing(5)
         books_layout.addWidget(self.add_selected_books_list)
 
         # Botón para eliminar libro seleccionado
@@ -812,7 +849,11 @@ class OrderWidget(QWidget):
         f"Cantidad: {book_entry['quantity']}"
         )
 
-        self.add_selected_books_list.addItem(item_text)
+        item = QListWidgetItem()
+        widget = BookItemWidget(book_entry)
+        item.setSizeHint(widget.sizeHint())
+        self.add_selected_books_list.addItem(item)
+        self.add_selected_books_list.setItemWidget(item, widget)
         self.add_book_input.clear()
         self.selected_additives = []
         self.select_services_btn.setText("Seleccionar servicios extras")
