@@ -327,11 +327,9 @@ class ProductionStatusTab(QWidget):
                             update_success = False
                             continue
                         
-                        # Enviar TODOS los campos del objeto existente, solo modificando 'ready'
-                        update_data = book_link.copy()  # Copiar todos los campos
-                        update_data['ready'] = is_ready  # Solo modificar el campo que nos interesa
+                        update_data = book_link.copy()
+                        update_data['ready'] = is_ready
                         
-                        # Remover campos de solo lectura que no deberían enviarse
                         update_data.pop('idRequested_book_title', None)
                         update_data.pop('idOrder_type', None)
                         
@@ -340,10 +338,6 @@ class ProductionStatusTab(QWidget):
                         if resp and resp.status_code == 200:
                             book_updated = True
                         else:
-                            # Agregar logging para debug
-                            print(f"Error actualizando libro {book_id}: {resp.status_code if resp else 'No response'}")
-                            if resp:
-                                print(f"Respuesta del error: {resp.text}")
                             update_success = False
                         break
                 

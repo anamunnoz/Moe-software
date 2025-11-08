@@ -260,14 +260,9 @@ class AdditiveViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    
-
-
 class RequestedBookViewSet(viewsets.ModelViewSet):
     queryset = Requested_book.objects.all()
     serializer_class = RequestedBookSerializer
-
-
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().select_related('idClient', 'idDelivery').prefetch_related('Requested_book__idBook')

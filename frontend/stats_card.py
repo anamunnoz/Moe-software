@@ -273,40 +273,34 @@ class DashboardWidget(QWidget):
         return widget
 
     def load_statistics(self):
-        try:
-            response = requests.get(f'{API_URL_DASHBOARD}main_stats/')
-            if response.status_code == 200:
-                data = response.json()
-                current_month = datetime.now().month
-                if data.get('month_orders_date'):
-                    valid_orders = [o for o in data['month_orders_date'] if datetime.fromisoformat(o['date']).month == current_month]
-                    month_total = sum(o['count'] for o in valid_orders)
-                else:
-                    month_total = data.get('month_orders', 0)
+        response = requests.get(f'{API_URL_DASHBOARD}main_stats/')
+        if response.status_code == 200:
+            data = response.json()
+            current_month = datetime.now().month
+            if data.get('month_orders_date'):
+                valid_orders = [o for o in data['month_orders_date'] if datetime.fromisoformat(o['date']).month == current_month]
+                month_total = sum(o['count'] for o in valid_orders)
+            else:
+                month_total = data.get('month_orders', 0)
 
-                self.orders_card.set_value(data['total_orders'])
-                self.clients_card.set_value(data['total_clients'])
-                self.month_orders_card.set_value(month_total)
-                self.books_ordered_card.set_value(data.get('total_books_ordered', 0))
-                month_income = data.get('month_income', 0)
-                self.month_income_card.set_value(f"${month_income:,.2f}")
+            self.orders_card.set_value(data['total_orders'])
+            self.clients_card.set_value(data['total_clients'])
+            self.month_orders_card.set_value(month_total)
+            self.books_ordered_card.set_value(data.get('total_books_ordered', 0))
+            month_income = data.get('month_income', 0)
+            self.month_income_card.set_value(f"${month_income:,.2f}")
 
-            self.load_chart_data()
-            self.load_top_books()
-        except Exception as e:
-            print("Error:", e)
+        self.load_chart_data()
+        self.load_top_books()
 
     def load_chart_data(self):
-        try:
-            response = requests.get(f'{API_URL_DASHBOARD}monthly_orders_chart/')
-            if response.status_code == 200:
-                data = response.json()
-                self.create_chart(data['chart_data'])
-        except Exception as e:
-            print("Error gráfica:", e)
+        response = requests.get(f'{API_URL_DASHBOARD}monthly_orders_chart/')
+        if response.status_code == 200:
+            data = response.json()
+            self.create_chart(data['chart_data'])
+
 
     def load_top_books(self):
-        try:
             response = requests.get(f'{API_URL_DASHBOARD}top_books_month/')
             if response.status_code == 200:
                 data = response.json()
@@ -354,8 +348,6 @@ class DashboardWidget(QWidget):
                     self.books_list.addItem(list_item)
                     self.books_list.setItemWidget(list_item, item_widget)
 
-        except Exception as e:
-            print("Error top libros:", e)
 
     def create_chart(self, chart_data):
         series = QLineSeries()

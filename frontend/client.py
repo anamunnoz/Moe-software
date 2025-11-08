@@ -589,10 +589,7 @@ class ClientsPage(QWidget):
                 f"No se pudo eliminar el cliente.\nCódigo: {r.status_code}\n{r.text}"
             )
 
-
-
     def _copy_client_to_clipboard(self, client):
-        """Copia la información del cliente seleccionado al portapapeles."""
         text = (
             f"👤 Nombre: {client['name']}\n"
             f"📞 Teléfono: {client['phone_number']}\n"
@@ -605,12 +602,10 @@ class ClientsPage(QWidget):
         QMessageBox.information(self, "Copiado", "La información del cliente se copió al portapapeles.")
 
     def _copy_addresses_to_clipboard(self, addresses):
-        """Copia todas las direcciones al portapapeles con estilo."""
         if not addresses:
             QMessageBox.information(self, "Sin direcciones", "Este cliente no tiene direcciones registradas.")
             return
 
-        # Embellecer el texto
         formatted = ""
         formatted += "\n".join([f"📍 {addr}" for addr in addresses])
 
@@ -623,22 +618,15 @@ class ClientsPage(QWidget):
             "Las direcciones se copiaron al portapapeles."
     )
 
-
-
-
-
-
-# todo             LISTAR DIRECCIONES
+#* ------------------- LISTAR DIRECCIONES -------------------
     def _build_addresses_tab(self):
         tab = QWidget()
         main_layout = QHBoxLayout(tab)
         main_layout.setSpacing(20)
 
-        # Columna izquierda - Búsqueda y lista
         left = QVBoxLayout()
         left.setSpacing(12)
 
-        # Sección de búsqueda
         search_layout = QVBoxLayout()
         search_layout.setSpacing(8)
         
@@ -656,22 +644,18 @@ class ClientsPage(QWidget):
         search_layout.addWidget(btn_search)
         left.addLayout(search_layout)
 
-        # Lista de resultados
         self.clients_list = QListWidget()
         self.clients_list.itemSelectionChanged.connect(self._on_client_address_selected)
         left.addWidget(self.clients_list, 1)
 
-        # Columna derecha - Información detallada
         right = QVBoxLayout()
         right.setSpacing(12)
 
-        # Contenedor de información del cliente
         self.client_info_container = QWidget()
         self.client_info_container.setObjectName("infoContainer")
         self.client_info_layout = QVBoxLayout(self.client_info_container)
         self.client_info_layout.setAlignment(Qt.AlignCenter)
 
-        # Placeholder inicial
         self.client_placeholder = QWidget()
         ph_layout = QVBoxLayout(self.client_placeholder)
         ph_layout.setAlignment(Qt.AlignCenter)
@@ -693,14 +677,12 @@ class ClientsPage(QWidget):
         self.tabs.addTab(tab, "Información de los clientes")
 
     def _search_client_addresses(self):
-        """Busca clientes y sus órdenes/direcciones"""
         query = self.search_address_input.text().strip()
         if not query:
             QMessageBox.information(self, "Búsqueda", "Ingresa un nombre, carnet o teléfono para buscar.")
             self.clients_list.clear()
             return
 
-        # URL para el nuevo endpoint
         url = f"{API_URL_CLIENTES}search_with_orders/?q={query}"
 
         r = http_get(url)
@@ -723,10 +705,8 @@ class ClientsPage(QWidget):
             return
 
         for client in clients:
-            # Usar tu widget personalizado ClientResultItem
             client_widget = ClientResultItem(client)
             
-            # Crear item en la lista
             list_item = QListWidgetItem(self.clients_list)
             list_item.setSizeHint(client_widget.sizeHint())
             self.clients_list.addItem(list_item)
@@ -734,7 +714,6 @@ class ClientsPage(QWidget):
             self._addresses_cache[id(list_item)] = client
 
     def _on_client_address_selected(self):
-            """Cuando se selecciona un cliente de la lista"""
             items = self.clients_list.selectedItems()
             if not items:
                 self._clear_client_info(show_placeholder=True)
@@ -748,22 +727,17 @@ class ClientsPage(QWidget):
 
             self._clear_client_info(show_placeholder=False)
 
-            # Widget principal con scroll
             main_widget = QWidget()
             main_layout = QVBoxLayout(main_widget)
             main_layout.setSpacing(15)
 
-            # ------------------ INFORMACIÓN DEL CLIENTE ------------------
+            #? ------------------ INFORMACIÓN DEL CLIENTE ------------------
             client_card = QFrame()
             client_card.setObjectName("card")
             client_layout = QVBoxLayout(client_card)
             client_layout.setSpacing(10)
-
-            # Encabezado con botón de copiar
             header_layout = QHBoxLayout()
 
-            
-            # Detalles del cliente
             def make_icon_line(icon_path, text):
                 w = QWidget()
                 layout = QHBoxLayout(w)
@@ -794,13 +768,12 @@ class ClientsPage(QWidget):
 
             main_layout.addWidget(client_card)
 
-            # ------------------ DIRECCIONES ------------------
+            #? ------------------ DIRECCIONES ------------------
             addresses_card = QFrame()
             addresses_card.setObjectName("card")
             addresses_layout = QVBoxLayout(addresses_card)
             addresses_layout.setSpacing(4)
 
-            # Título con icono
             title_layout = QHBoxLayout()
             title_icon = QLabel()
             title_icon.setPixmap(QPixmap("icons/location.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -811,7 +784,6 @@ class ClientsPage(QWidget):
             title_layout.addStretch()
             addresses_layout.addLayout(title_layout)
 
-            # Lista de direcciones
             unique_addresses = client.get('unique_addresses', [])
             if unique_addresses:
                 for address in unique_addresses:
@@ -832,7 +804,6 @@ class ClientsPage(QWidget):
                 no_addresses.setAlignment(Qt.AlignCenter)
                 addresses_layout.addWidget(no_addresses)
 
-            # 🔹 Botón para copiar todas las direcciones
             if unique_addresses:
                 copy_addresses_btn = QPushButton("Copiar todas las direcciones")
                 copy_addresses_btn.setObjectName("secondaryBtn")
@@ -842,7 +813,6 @@ class ClientsPage(QWidget):
 
             main_layout.addWidget(addresses_card)
 
-            # Órdenes del cliente
             orders_card = QFrame()
             orders_card.setObjectName("card")
             orders_layout = QVBoxLayout(orders_card)
@@ -857,7 +827,6 @@ class ClientsPage(QWidget):
             orders_title_layout.addStretch()
             orders_layout.addLayout(orders_title_layout)
 
-            
             orders_list = client.get('orders', [])
             if orders_list:
                 for order in orders_list:
@@ -871,7 +840,6 @@ class ClientsPage(QWidget):
             
             main_layout.addWidget(orders_card)
 
-            # Scroll
             scroll_area = QScrollArea()
             scroll_area.setWidgetResizable(True)
             scroll_area.setWidget(main_widget)
@@ -880,7 +848,6 @@ class ClientsPage(QWidget):
 
 
     def _clear_client_info(self, show_placeholder=True):
-        """Limpia la información del cliente mostrada"""
         while self.client_info_layout.count():
             child = self.client_info_layout.takeAt(0)
             if child.widget():
@@ -902,86 +869,15 @@ class ClientsPage(QWidget):
             self.client_info_layout.addWidget(self.client_placeholder)
 
     def _load_books_and_additives(self):
-        """Carga los datos de libros y aditivos"""
-        # Cargar libros
         r_books = http_get(API_URL_BOOKS)
         if r_books and r_books.status_code == 200:
             self.books_data = r_books.json()
         
-        # Cargar aditivos
         r_additives = http_get(API_URL_ADITIVOS)
         if r_additives and r_additives.status_code == 200:
             self.additives_data = r_additives.json()
 
-    # def _create_order_widget(self, order):
-    #     """Crea un widget para mostrar una orden"""
-    #     widget = QWidget()
-    #     widget.setObjectName("orderCard")
-    #     layout = QVBoxLayout(widget)
-    #     layout.setContentsMargins(12, 10, 12, 10)
-    #     layout.setSpacing(6)
-        
-    #     # Header de la orden
-    #     header_layout = QHBoxLayout()
-        
-    #     order_id = QLabel(f"Orden #{order['idOrder']}")
-    #     order_id.setStyleSheet("font-weight: bold; color: #333; font-size: 14px;")
-        
-    #     order_type = QLabel(f"📦 {order['type'].title()}")
-    #     order_type.setStyleSheet("color: #666; font-size: 13px;")
-        
-    #     order_status = QLabel("✅ Completada" if order['done'] else "🟡 Pendiente")
-    #     order_status.setStyleSheet("color: #666; font-size: 13px;")
-        
-    #     header_layout.addWidget(order_id)
-    #     header_layout.addStretch()
-    #     header_layout.addWidget(order_type)
-    #     header_layout.addWidget(order_status)
-        
-    #     layout.addLayout(header_layout)
-        
-    #     # Detalles de la orden
-    #     details_layout = QVBoxLayout()
-    #     details_layout.setSpacing(3)
-        
-    #     if order['address']:
-    #         address_label = QLabel(f"📍 {order['address']}")
-    #         address_label.setStyleSheet("color: #555; font-size: 12px;")
-    #         address_label.setWordWrap(True)
-    #         details_layout.addWidget(address_label)
-        
-    #     if order['delivery_zone']:
-    #         delivery_label = QLabel(f"🚗 {order['delivery_zone']} (${order['delivery_price']})")
-    #         delivery_label.setStyleSheet("color: #555; font-size: 12px;")
-    #         details_layout.addWidget(delivery_label)
-        
-    #     price_label = QLabel(f"💰 ${order['total_price']} - {order['pay_method']}")
-    #     price_label.setStyleSheet("color: #555; font-size: 12px;")
-    #     details_layout.addWidget(price_label)
-        
-    #     dates_label = QLabel(f"📅 Pedido: {order['order_date']} | Entrega: {order['delivery_date']}")
-    #     dates_label.setStyleSheet("color: #555; font-size: 11px;")
-    #     details_layout.addWidget(dates_label)
-        
-    #     layout.addLayout(details_layout)
-        
-    #     widget.setStyleSheet("""
-    #         QWidget#orderCard {
-    #             border: 1px solid #e0e0e0;
-    #             border-radius: 8px;
-    #             background: #f9f9f9;
-    #             margin: 2px;
-    #         }
-    #         QWidget#orderCard:hover {
-    #             background: #f0f0f0;
-    #             border: 1px solid #007acc;
-    #         }
-    #     """)
-        
-    #     return widget
-
     def _create_order_widget(self, order):
-        """Crea un widget para mostrar una orden"""
         widget = QWidget()
         widget.setObjectName("orderCard")
         widget.mousePressEvent = lambda event: self._show_order_summary(order['idOrder'])
@@ -990,7 +886,6 @@ class ClientsPage(QWidget):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(6)
         
-        # Header de la orden
         header_layout = QHBoxLayout()
         
         order_id = QLabel(f"Orden #{order['idOrder']}")
@@ -1009,7 +904,6 @@ class ClientsPage(QWidget):
         
         layout.addLayout(header_layout)
         
-        # Detalles de la orden
         details_layout = QVBoxLayout()
         details_layout.setSpacing(3)
         
@@ -1084,12 +978,10 @@ class ClientsPage(QWidget):
 
 
     def _format_order_summary(self, order_data):
-        """Formatea el resumen de la orden en el formato del vale usando los datos del endpoint full_details"""
         mensaje = f"🔰 ORDEN No. {order_data['idOrder']}\n\n"
         mensaje += f"🗓 Fecha: {order_data['order_date']}\n"
         mensaje += f"🗓 Fecha aproximada de entrega: {order_data['delivery_date']}\n\n"
         
-        # Agregar detalles de cada libro
         for book_info in order_data['books']:
             book = book_info['book']
             additives = book_info['additives']
@@ -1099,7 +991,6 @@ class ClientsPage(QWidget):
             titulo = book.get("title", "Desconocido")
             autor = book.get("author", "Sin autor")
             
-            # Buscar carátula entre los aditivos
             caratula_name = "Tapa Normal"
             caratula_price = 0
             service_additives = []
@@ -1111,49 +1002,34 @@ class ClientsPage(QWidget):
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
             
-            # Precio base del libro (número de páginas)
             base_price = book.get('number_pages', 0)
             
-            # Calcular precios base (sin descuento)
             precio_base_caratula = base_price + caratula_price
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
             mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
             
-            # Información del libro
             mensaje += f"📚 Título: {titulo}\n"
             mensaje += f"👤 Autor: {autor}\n"
             if cantidad > 1:
                 mensaje += f"🔢 Cantidad: {cantidad}\n"
             
-            # Precio base + carátula
             mensaje += f"💰 {caratula_name}: {precio_base_caratula} USD | {cup_price_base} CUP | {mlc_price_base} MLC\n"
             
-            # Servicios extras (que no sean carátula)
             for service in service_additives:
                 service_cup = convert_to_currency(service['price'], 'USD', 'CUP')
                 service_mlc = convert_to_currency(service['price'], 'USD', 'MLC')
                 mensaje += f"💰 {service['name']}: {service['price']} USD | {service_cup} CUP | {service_mlc} MLC\n"
             
-            # Descuento
             if discount != 0:
                 mensaje += f"📉 Descuento: {discount}%\n"
             else:
                 mensaje += "\n"
             
-            # 🔥 CALCULO CORREGIDO: Descuento solo aplica a base + carátula, no a servicios
-            # Precio base + carátula con descuento aplicado
-            precio_base_con_descuento = precio_base_caratula * (1 - discount / 100)
-            
-            # Precio de servicios (sin descuento)
+            precio_base_con_descuento = precio_base_caratula * (1 - discount / 100))
             precio_servicios = sum(service['price'] for service in service_additives)
-            
-            # Precio unitario final (base con descuento + servicios)
             precio_unitario_final = precio_base_con_descuento + precio_servicios
-            
-            # Precio total del libro (unitario * cantidad)
             precio_total_libro = precio_unitario_final * cantidad
-            
-            # Conversiones a otras monedas
+
             unitario_cup = convert_to_currency(precio_unitario_final, 'USD', 'CUP')
             unitario_mlc = convert_to_currency(precio_unitario_final, 'USD', 'MLC')
             libro_total_cup = convert_to_currency(precio_total_libro, 'USD', 'CUP')
@@ -1165,17 +1041,14 @@ class ClientsPage(QWidget):
             else:
                 mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
         
-        # Total final (usar el total_price de la orden)
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
         mensaje += f"💰 Total a pagar: {total_final:.2f} USD | {total_cup} CUP | {total_mlc} MLC\n\n"
         
-        # PAGOS
         mensaje += f"💰 Pago por adelantado: {order_data['payment_advance']:.2f} USD\n"
         mensaje += f"💰 Pago pendiente: {order_data['outstanding_payment']:.2f} USD\n\n"
         
-        # Mensajería
         if order_data['delivery_price'] > 0:
             delivery_cup = convert_to_currency(order_data['delivery_price'], 'USD', 'CUP')
             delivery_mlc = convert_to_currency(order_data['delivery_price'], 'USD', 'MLC')
@@ -1183,13 +1056,11 @@ class ClientsPage(QWidget):
         else:
             mensaje += f"🚗 Mensajería: Recogida\n\n"
 
-        # INFORMACIÓN DEL CLIENTE Y ENTREGA
         mensaje += "👤Información del contacto:\n"
         mensaje += f"— Nombre: {order_data['client']['name']}\n"
         mensaje += f"— Carnet de Identidad: {order_data['client']['identity']}\n"
         mensaje += f"— Teléfono: {order_data['client']['phone_number']}\n"
         
-        # Solo mostrar dirección si no es recogida
         if (order_data['delivery_zone'] and 
             'recogida' not in order_data['delivery_zone'].lower() and 
             order_data['address']):
@@ -1198,7 +1069,6 @@ class ClientsPage(QWidget):
         mensaje += f"— Servicio de entrega: {order_data['type']}\n"
         mensaje += f"— Método de pago: {order_data['pay_method']}\n\n"
         
-        # FOOTER
         mensaje += "🔆 Conoce nuestros trabajos en instagram.com/moe.libros"
         
         return mensaje
@@ -1210,8 +1080,6 @@ class ClientsPage(QWidget):
         dialog.setMinimumHeight(500)
         
         layout = QVBoxLayout(dialog)
-        
-        # Título con información de que se copió
         title_layout = QHBoxLayout()
         title_label = QLabel(f"📋 Vale de Orden #{order_id}")
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
@@ -1219,7 +1087,6 @@ class ClientsPage(QWidget):
         title_layout.addStretch()
         layout.addLayout(title_layout)
         
-        # Área de texto para mostrar el vale
         text_edit = QTextEdit()
         text_edit.setPlainText(mensaje)
         text_edit.setReadOnly(True)
@@ -1236,7 +1103,6 @@ class ClientsPage(QWidget):
         
         layout.addWidget(text_edit)
         
-        # Botones
         button_layout = QHBoxLayout()
         close_btn = QPushButton("Cerrar")
         close_btn.setObjectName("primaryBtn")

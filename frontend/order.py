@@ -1341,7 +1341,7 @@ class OrderWidget(QWidget):
             # --- DIRECCIÓN ACTUAL ---
             address = data.get("address", "")
             self.modify_order_address_current.setText(address)
-            self.modify_order_address_new.setText(address)  # También poner en el campo modificable
+            self.modify_order_address_new.setText(address) 
 
             # --- MUNICIPIO ACTUAL ---
             delivery_zone = data.get("delivery_zone", "No especificado")
@@ -1351,7 +1351,6 @@ class OrderWidget(QWidget):
             pay_method = data.get("pay_method", "")
             self.modify_payment_method_current.setText(pay_method)
             
-            # Establecer el método de pago actual en el combo box
             index = self.modify_payment_method_new.findText(pay_method)
             if index >= 0:
                 self.modify_payment_method_new.setCurrentIndex(index)
@@ -1365,7 +1364,6 @@ class OrderWidget(QWidget):
             # Cargar tipos de pedido (Regular + servicios)
             self._load_order_types_for_modify()
             
-            # Establecer el tipo de pedido actual en el combo box
             index = self.modify_order_type_new.findText(order_type)
             if index >= 0:
                 self.modify_order_type_new.setCurrentIndex(index)
