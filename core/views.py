@@ -454,17 +454,22 @@ class OrderViewSet(viewsets.ModelViewSet):
             order = self.get_object()
         except Order.DoesNotExist:
             return Response({"error": "Orden no encontrada"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # INCLUIR 'done' EN LOS CAMPOS PERMITIDOS
+
         allowed_fields = ['address', 'pay_method', 'type', 'payment_advance', 'total_price', 'outstanding_payment', 'idDelivery', 'done', 'added_to_excel']
         update_data = {k: v for k, v in request.data.items() if k in allowed_fields}
-        
+
+        current_type = order.type
+
         serializer = self.get_serializer(order, data=update_data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
+
+        new_type = update_data.get("type")
+        if new_type and new_type != current_type:
+            self._update_order_type_additives(order, new_type)
+
         return Response({
-            "order": serializer.data,
+            "order": self.get_serializer(order).data,
             "detail": "Datos de la orden actualizados correctamente"
         }, status=status.HTTP_200_OK)
 
@@ -494,9 +499,45 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.save()
 
         return Response({"detail": "Estados actualizados correctamente", "done": order.done})
-
-
     
+    def _update_order_type_additives(self, order: Order, new_type: str):
+        current_type_lower = order.type.lower()
+        new_type_lower = new_type.lower()
+        book_links = Book_on_order.objects.filter(idOrder=order).select_related('idRequested_book')
+
+        for link in book_links:
+            requested_book = link.idRequested_book
+            quantity = link.quantity
+
+            old_additives = Requested_book_additive.objects.filter(
+                idRequested_book=requested_book,
+                idAdditive__name__istartswith="servicio"
+            )
+            for old in old_additives:
+                order.total_price -= float(old.idAdditive.price) * quantity
+            old_additives.delete()
+
+            additive_to_add = None
+            if new_type_lower.startswith("servicio express"):
+                additive_to_add = "Servicio Express"
+            elif new_type_lower.startswith("servicio premium express"):
+                additive_to_add = "Servicio Premium Express"
+
+            if additive_to_add:
+                try:
+                    additive_obj = Additive.objects.get(name__iexact=additive_to_add)
+                    Requested_book_additive.objects.create(
+                        idRequested_book=requested_book,
+                        idAdditive=additive_obj
+                    )
+                    order.total_price += float(additive_obj.price) * quantity
+                except Additive.DoesNotExist:
+                    continue
+
+        order.type = new_type
+        order.save()
+
+  
 class BookOnOrderViewSet(viewsets.ModelViewSet):
     queryset = Book_on_order.objects.all().select_related('idRequested_book__idBook', 'idOrder')
     serializer_class = BookOnOrderSerializer
