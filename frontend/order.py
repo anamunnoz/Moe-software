@@ -961,6 +961,13 @@ class OrderWidget(QWidget):
     def _clear_client_selection(self):
         self.add_client_input.clear()
 
+    def reload_data(self):
+        self._load_clients()
+        self._load_deliveries()
+        self._load_books()
+        self._load_additives()
+    
+
     
 #* -------------------- PESTAÑA MODIFICAR ORDEN --------------------
     def _setup_modify_tab(self):

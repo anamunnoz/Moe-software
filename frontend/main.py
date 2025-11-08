@@ -185,7 +185,8 @@ class MainWindow(QMainWindow):
         self.sidebar.btn_clientes.clicked.connect(lambda: self.stack.setCurrentWidget(self.client_page))
         self.sidebar.btn_gestion.clicked.connect(lambda: self.stack.setCurrentWidget(self.gestion_page))
         self.sidebar.btn_precio.clicked.connect(lambda: self.stack.setCurrentWidget(self.consultas_page))
-        self.sidebar.btn_ordenes.clicked.connect(lambda: self.stack.setCurrentWidget(self.order_page))
+        # self.sidebar.btn_ordenes.clicked.connect(lambda: self.stack.setCurrentWidget(self.order_page))
+        self.sidebar.btn_ordenes.clicked.connect(self.show_order_page)
         self.sidebar.btn_production.clicked.connect(lambda: self.stack.setCurrentWidget(self.production_page))
         self.sidebar.btn_vauchers.clicked.connect(lambda: self.stack.setCurrentWidget(self.vauchers_page))
         self.sidebar.btn_excel.clicked.connect(lambda: self.stack.setCurrentWidget(self.generate_excel_page))
@@ -213,6 +214,12 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             super().keyPressEvent(event)
+
+    def show_order_page(self):
+        if hasattr(self.order_page, "reload_data"):
+            self.order_page.reload_data()
+        self.stack.setCurrentWidget(self.order_page)
+
 
 
 if __name__ == "__main__":

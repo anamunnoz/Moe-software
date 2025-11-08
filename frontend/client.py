@@ -1025,7 +1025,7 @@ class ClientsPage(QWidget):
             else:
                 mensaje += "\n"
             
-            precio_base_con_descuento = precio_base_caratula * (1 - discount / 100))
+            precio_base_con_descuento = precio_base_caratula * (1 - discount / 100)
             precio_servicios = sum(service['price'] for service in service_additives)
             precio_unitario_final = precio_base_con_descuento + precio_servicios
             precio_total_libro = precio_unitario_final * cantidad
