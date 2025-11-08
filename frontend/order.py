@@ -465,7 +465,7 @@ class OrderWidget(QWidget):
                 caratula_price = additive.get("price", 0)
             else:
                 other_additives_price += additive.get("price", 0)
-                
+
         number_of_pages = book_data.get('number_pages', 0)
         color_pages = book_data.get("color_pages", 0)
         printing_format = book_data.get("printing_format", "NORMAL")
@@ -481,8 +481,25 @@ class OrderWidget(QWidget):
 
     def _update_delivery_date_add(self):
         today = QDate.currentDate()
-        days = 5 if self.add_type_combo.currentText().lower() == "servicio express" else 28
-        self.add_delivery_date.setDate(today.addDays(days))
+        tipo = self.add_type_combo.currentText().strip().lower()
+       
+        if tipo == "servicio regular":
+            fecha_entrega = today.addDays(30)
+
+        elif tipo in ("servicio express", "servicio premium express"):
+            objetivo = 7 if tipo == "servicio express" else 2
+            dias_habiles = 0
+            fecha_entrega = today
+
+            while dias_habiles < objetivo:
+                fecha_entrega = fecha_entrega.addDays(1)
+                if fecha_entrega.dayOfWeek() < 6:
+                    dias_habiles += 1
+
+        else:
+            fecha_entrega = today.addDays(30)
+        self.add_delivery_date.setDate(fecha_entrega)
+
 
     def _on_delivery_selected(self, text):
         selected_zone = text.strip()
