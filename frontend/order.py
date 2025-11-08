@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QTextEdit, QMessageBox, QFormLayout, QListWidget, QListWidgetItem, QDialog,
     QCompleter, QSpinBox, QTabWidget, QGroupBox, QListView, QSizePolicy,
     QDialogButtonBox, QCheckBox, QScrollArea, QDateEdit,  QApplication,
-    QGridLayout
+    QGridLayout, QFrame
 )
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
@@ -1654,7 +1654,7 @@ class OrderWidget(QWidget):
             QGroupBox {
                 font-weight: bold;
                 font-size: 16px;
-                border: 2px solid #b8b8b8;
+                border: none;
                 border-radius: 10px;
                 margin-top: 10px;
                 padding: 12px;
@@ -1848,18 +1848,31 @@ class OrderWidget(QWidget):
         """)
         books_layout = QVBoxLayout(books_group)
 
-        self.delete_books_text = QTextEdit()
-        self.delete_books_text.setReadOnly(True)
-        self.delete_books_text.setFixedHeight(200)
-        self.delete_books_text.setStyleSheet("""
-            QTextEdit {
+        books_scroll = QScrollArea()
+        books_scroll.setWidgetResizable(True)
+        books_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        books_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        books_scroll.setFixedHeight(250)
+        books_scroll.setStyleSheet("""
+            QScrollArea {
                 border: 1px solid #ddd;
                 border-radius: 5px;
                 background-color: white;
-                font-size: 12px;
+            }
+            QScrollArea > QWidget > QWidget {
+                background-color: white;
             }
         """)
-        books_layout.addWidget(self.delete_books_text)
+
+        self.delete_books_container = QWidget()
+        self.delete_books_layout = QVBoxLayout(self.delete_books_container)
+        self.delete_books_layout.setAlignment(Qt.AlignTop)
+        self.delete_books_layout.setSpacing(10)
+        self.delete_books_layout.setContentsMargins(10, 10, 10, 10)
+
+        books_scroll.setWidget(self.delete_books_container)
+        books_layout.addWidget(books_scroll)
+
         details_layout.addWidget(books_group)
 
         main_layout.addWidget(details_group)
@@ -1886,7 +1899,7 @@ class OrderWidget(QWidget):
             }
         """)
         self.delete_btn.clicked.connect(self._delete_order)
-        self.delete_btn.setEnabled(False)  # Deshabilitado hasta que se seleccione una orden
+        self.delete_btn.setEnabled(False)
         main_layout.addWidget(self.delete_btn, alignment=Qt.AlignCenter)
 
         scroll.setWidget(container)
@@ -1909,8 +1922,15 @@ class OrderWidget(QWidget):
                 item_text = f"Orden #{order['idOrder']} — {order['client_name']} ({date})"
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
+
+                if order.get("done", False):
+                    item.setIcon(QIcon("icons/check.png"))  
+                else:
+                    item.setIcon(QIcon("icons/pendiente.png"))
+
                 self.delete_order_list.addItem(item)
                 return
+
         r = http_get(API_URL_ORDERS)
         if not r or r.status_code != 200:
             QMessageBox.warning(self, "Error", "No se pudieron obtener las órdenes del servidor.")
@@ -1932,6 +1952,10 @@ class OrderWidget(QWidget):
                 item_text = f"Orden #{order['idOrder']} — {order['client_name']} ({date})"
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
+                if order.get("done", False):
+                    item.setIcon(QIcon("icons/check.png"))  
+                else:
+                    item.setIcon(QIcon("icons/pendiente.png"))
                 results.append(item)
 
         if results:
@@ -1976,40 +2000,23 @@ class OrderWidget(QWidget):
             self.delete_delivery_price.setText(f"{delivery_price:.2f} USD")
 
             # --- LIBROS Y ADITIVOS ---
-            books_text = ""
+            for i in reversed(range(self.delete_books_layout.count())):
+                widget = self.delete_books_layout.itemAt(i).widget()
+                if widget:
+                    widget.deleteLater()
+
             books = data.get("books", [])
             
-            for i, book_info in enumerate(books, 1):
-                book = book_info['book']
-                additives = book_info['additives']
-                discount = book_info['discount']
-                quantity = book_info['quantity']
-                ready = "✅" if book_info.get('ready', False) else "❌"
+            if not books:
+                no_books_label = QLabel("No hay libros en esta orden")
+                no_books_label.setAlignment(Qt.AlignCenter)
+                no_books_label.setStyleSheet("color: #7f8c8d; font-style: italic; padding: 20px;")
+                self.delete_books_layout.addWidget(no_books_label)
+            else:
+                for i, book_info in enumerate(books, 1):
+                    book_widget = self._create_book_widget_delete(i, book_info)
+                    self.delete_books_layout.addWidget(book_widget)
 
-                books_text += f"📖 LIBRO {i}:\n"
-                books_text += f"   Título: {book.get('title', 'Desconocido')}\n"
-                books_text += f"   Autor: {book.get('author', 'Sin autor')}\n"
-                books_text += f"   Páginas: {book.get('number_pages', 0)}\n"
-                books_text += f"   Formato: {book.get('printing_format', 'No especificado')}\n"
-                books_text += f"   Páginas color: {book.get('color_pages', 0)}\n"
-                books_text += f"   Cantidad: {quantity}\n"
-                books_text += f"   Descuento: {discount}%\n"
-                books_text += f"   Listo: {ready}\n"
-
-                # Aditivos
-                if additives:
-                    books_text += "   🛠️ Servicios:\n"
-                    for additive in additives:
-                        books_text += f"      • {additive['name']}: {additive['price']} USD\n"
-                else:
-                    books_text += "   🛠️ Servicios: Ninguno\n"
-                
-                books_text += "\n"
-
-            if not books_text:
-                books_text = "No hay libros en esta orden."
-
-            self.delete_books_text.setPlainText(books_text)
             self.delete_btn.setEnabled(True)
 
         except Exception as e:
@@ -2021,6 +2028,25 @@ class OrderWidget(QWidget):
             return
 
         order_id = self.current_delete_order_id
+
+        try:
+            r = http_get(f"{API_URL_ORDERS}{order_id}/")
+            if not r or r.status_code != 200:
+                QMessageBox.warning(self, "Error", f"No se pudo verificar el estado de la orden #{order_id}.")
+                return
+            order_data = r.json()
+            if order_data.get("done", False):
+                QMessageBox.warning(
+                    self,
+                    "No permitido",
+                    f"La orden #{order_id} ya está marcada como finalizada y no puede eliminarse. 🚫"
+                )
+                return
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo verificar la orden antes de eliminar.\n{str(e)}")
+            return
+
         confirm = QMessageBox.question(
             self,
             "Confirmar eliminación",
@@ -2071,6 +2097,99 @@ class OrderWidget(QWidget):
         self.delete_delivery_price.setText("")
         self.delete_books_text.clear()
         self.delete_btn.setEnabled(False)
+
+    def _create_book_widget_delete(self, index, book_info):
+        book_widget = QFrame()
+        book_widget.setStyleSheet("""
+            QFrame {
+                background-color: #ffffff;
+                border: none;
+                border-radius: 10px;
+                padding: 10px 14px;
+            }
+        """)
+
+        layout = QVBoxLayout(book_widget)
+        layout.setSpacing(6)
+
+        # ------------------- HEADER -------------------
+        header_layout = QHBoxLayout()
+
+        title_label = QLabel(book_info['book'].get('title', 'Desconocido'))
+        title_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #2c3e50;")
+
+        header_layout.addWidget(title_label)
+        header_layout.addStretch()
+        layout.addLayout(header_layout)
+
+        # ------------------- DETALLES -------------------
+        book_details_layout = QFormLayout()
+        book_details_layout.setHorizontalSpacing(10)
+        book_details_layout.setVerticalSpacing(3)
+
+        book = book_info['book']
+
+        # Campos básicos
+        author_label = QLabel(book.get('author', 'No especificado'))
+        pages_label = QLabel(f"{book.get('number_pages', 0)} páginas")
+        format_label = QLabel(book.get('printing_format', 'No especificado'))
+        color_label = QLabel(f"{book.get('color_pages', 0)} páginas color")
+        quantity_label = QLabel(f"{book_info.get('quantity', 1)} unidad(es)")
+        discount_label = QLabel(f"{book_info.get('discount', 0)}%")
+        ready = book_info.get('ready', False)
+        if ready:
+            state_label= QLabel("✅ Listo")
+        else:
+            state_label= QLabel("⏳ Pendiente")
+
+        for lbl in [pages_label, format_label, color_label, quantity_label, discount_label, state_label, author_label]:
+            lbl.setStyleSheet("color: #555; font-size: 13px;")
+
+        book_details_layout.addRow("👤 Author:", author_label)
+        book_details_layout.addRow("📄 Páginas:", pages_label)
+        book_details_layout.addRow("🖨️ Formato:", format_label)
+        book_details_layout.addRow("🎨 Color:", color_label)
+        book_details_layout.addRow("🔢 Cantidad:", quantity_label)
+        book_details_layout.addRow("💰 Descuento:", discount_label)
+        book_details_layout.addRow("⚠️ Estado:", state_label)
+
+        layout.addLayout(book_details_layout)
+        # ------------------- SERVICIOS / ADITIVOS -------------------
+        additives = book_info.get('additives', [])
+        if additives:
+            additives_group = QGroupBox("🛠️ Servicios incluidos")
+            additives_group.setStyleSheet("""
+                QGroupBox {
+                    font-weight: 600;
+                    font-size: 13px;
+                    border: none;
+                    border-radius: 8px;
+                    margin-top: 6px;
+                    padding: 6px 8px;
+                    background-color: #fafafa;
+                }
+                QGroupBox::title {
+                    color: #2c3e50;
+                    font-size: 13px;
+                    margin-bottom: 4px;
+                    subcontrol-origin: margin;
+                    left: 5px;
+                    padding: 0 4px;
+                }
+            """)
+
+            additives_layout = QVBoxLayout(additives_group)
+            additives_layout.setSpacing(3)
+
+            for additive in additives:
+                name_label = QLabel(f"• {additive['name']}")
+                name_label.setStyleSheet("font-size: 13px; color: #2c3e50;")
+                additives_layout.addWidget(name_label)
+
+            layout.addWidget(additives_group)
+
+        return book_widget
+
 
         
 #* ------------------- STYLE -------------------
