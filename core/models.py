@@ -62,9 +62,11 @@ class Order(models.Model):
     added_to_excel = models.BooleanField(default=False)
     
 
-    def __str__(self) -> str:
-        return self.type
-
+    def save(self, *args, **kwargs):
+        self.outstanding_payment = round(self.total_price - self.payment_advance, 2)
+        if self.outstanding_payment < 0:
+            self.outstanding_payment = 0
+        super().save(*args, **kwargs)
 
 class Book_on_order(models.Model):
     idRequested_book = models.ForeignKey(Requested_book, on_delete=models.CASCADE)

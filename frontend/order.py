@@ -149,6 +149,7 @@ class OrderWidget(QWidget):
         self._load_books()
         self._load_additives()
 
+
 #* -------------------- CARGAR DATOS DESDE BACKEND --------------------
     def _load_clients(self):
         self.clients_data = []
@@ -457,6 +458,8 @@ class OrderWidget(QWidget):
         self.add_payment_advance_edit = QLineEdit()
         self.add_payment_advance_edit.setPlaceholderText("0.00")
         self.add_payment_advance_edit.textChanged.connect(self._update_totals_add)
+        self.add_payment_advance_edit.textEdited.connect(self._update_totals_add)
+
         details_layout.addRow(make_icon_label("icons/money.png", "Pago adelantado"), self.add_payment_advance_edit)
 
         # Pago pendiente
@@ -523,7 +526,7 @@ class OrderWidget(QWidget):
         if tipo == "servicio regular":
             fecha_entrega = today.addDays(30)
 
-        elif tipo in ("servicio express", "servicio premium express"):
+        elif tipo in ("servicio express", "servicio premium"):
             objetivo = 7 if tipo == "servicio express" else 2
             dias_habiles = 0
             fecha_entrega = today
@@ -946,6 +949,7 @@ class OrderWidget(QWidget):
                 "quantity": book_entry["quantity"]
             }
             order_data["requested_books"].append(book_data)
+        
 
         r = http_post(f"{API_URL_ORDERS}create_full_order/", order_data)
         if not r or r.status_code not in (200, 201):

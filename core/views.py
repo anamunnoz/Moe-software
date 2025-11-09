@@ -5,7 +5,7 @@ from .models import Client, Delivery, Book, Additive, Requested_book, Book_on_or
 from .serializers import ClientSerializer, DeliverySerializer, BookSerializer, AdditiveSerializer, RequestedBookSerializer, BookOnOrderSerializer, OrderSerializer, RequestedBookAdditiveSerializer  
 from django.db import transaction
 from django.db.models import Q, Count, Sum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.utils import timezone
 from collections import Counter
 
@@ -272,6 +272,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='create_full_order')
     def create_full_order(self, request):
         data = request.data
+        print("DEBUG - DATA RECIBIDA:", request.data, flush=True)
+
 
         order_serializer = self.get_serializer(data=data)
         order_serializer.is_valid(raise_exception=True)
@@ -304,7 +306,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
                 created_requested_books.append(requested_book.idRequested_book)
         except Exception as e:
-            print('except')
             transaction.set_rollback(True)
             return Response(
                 {"detail": f"Error creando libros o aditivos: {str(e)}"},
@@ -455,23 +456,72 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Order.DoesNotExist:
             return Response({"error": "Orden no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
-        allowed_fields = ['address', 'pay_method', 'type', 'payment_advance', 'total_price', 'outstanding_payment', 'idDelivery', 'done', 'added_to_excel']
+        allowed_fields = [
+            'address', 'pay_method', 'type', 'payment_advance',
+            'total_price', 'idDelivery', 'done', 'added_to_excel'
+        ]
         update_data = {k: v for k, v in request.data.items() if k in allowed_fields}
 
         current_type = order.type
 
-        serializer = self.get_serializer(order, data=update_data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        for field, value in update_data.items():
+            if field == "idDelivery" and value:
+                try:
+                    delivery = Delivery.objects.get(pk=value)
+                    setattr(order, field, delivery)
+                except Delivery.DoesNotExist:
+                    continue
+            else:
+                setattr(order, field, value)
 
         new_type = update_data.get("type")
         if new_type and new_type != current_type:
             self._update_order_type_additives(order, new_type)
+            self._recalculate_delivery_date(order, new_type)
 
+        try:
+            payment_advance = float(order.payment_advance or 0)
+            total_price = float(order.total_price or 0)
+        except ValueError:
+            payment_advance = 0.0
+            total_price = 0.0
+
+        order.outstanding_payment = round(max(total_price - payment_advance, 0), 2)
+
+        order.save()
+
+        serializer = self.get_serializer(order)
         return Response({
-            "order": self.get_serializer(order).data,
+            "order": serializer.data,
             "detail": "Datos de la orden actualizados correctamente"
         }, status=status.HTTP_200_OK)
+
+
+    
+    def _recalculate_delivery_date(self, order, order_type: str):
+
+        today = date.today()
+        tipo = order_type.strip().lower()
+
+        if tipo == "servicio regular":
+            fecha_entrega = today + timedelta(days=30)
+
+        elif tipo in ("servicio express", "servicio premium"):
+            objetivo = 7 if tipo == "servicio express" else 2
+            dias_habiles = 0
+            fecha_entrega = today
+
+            while dias_habiles < objetivo:
+                fecha_entrega += timedelta(days=1)
+                if fecha_entrega.weekday() < 5:  # lunes=0, viernes=4
+                    dias_habiles += 1
+
+        else:
+            fecha_entrega = today + timedelta(days=30)
+
+        order.delivery_date = fecha_entrega.strftime("%Y-%m-%d")
+        order.save()
+
 
 
     @transaction.atomic
@@ -520,8 +570,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             additive_to_add = None
             if new_type_lower.startswith("servicio express"):
                 additive_to_add = "Servicio Express"
-            elif new_type_lower.startswith("servicio premium express"):
-                additive_to_add = "Servicio Premium Express"
+            elif new_type_lower.startswith("servicio premium"):
+                additive_to_add = "Servicio Premium"
 
             if additive_to_add:
                 try:
