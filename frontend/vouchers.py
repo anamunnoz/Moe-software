@@ -15,6 +15,7 @@ from urls import API_URL_ORDERS
 import re
 import qrcode
 from urllib.parse import quote
+from docx.shared import Cm
 
 
 class VouchersTab(QWidget):
@@ -309,10 +310,13 @@ class VouchersTab(QWidget):
         return html_content
 
     def _create_word_document(self, orders_data):
-        from docx.shared import Cm
-        desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+        documents_path  = os.path.join(os.path.expanduser("~"), "Documents")
+        moe_path = os.path.join(documents_path, "Moe")
+        os.makedirs(moe_path, exist_ok=True)
+
+
         filename = "vales_ordenes.docx"
-        file_path = os.path.join(desktop_path, filename)
+        file_path = os.path.join(moe_path, filename)
         
         if os.path.exists(file_path):
             doc = Document(file_path)

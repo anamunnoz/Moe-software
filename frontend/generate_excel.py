@@ -112,11 +112,13 @@ class ExcelGenerationThread(QThread):
 
             df = pd.DataFrame(excel_data)
             df = df.sort_values(by=['Semana', 'Orden'], ascending=[True, True])
-            desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+            documents_path = os.path.join(os.path.expanduser("~"), "Documents")
+            moe_path = os.path.join(documents_path, "Moe")
+            os.makedirs(moe_path, exist_ok=True)
             
             if self.excel_mode == 'new':
                 filename = f"LOTE {datetime.now().month}.xlsx"
-                file_path = os.path.join(desktop_path, filename)               
+                file_path = os.path.join(moe_path, filename)               
                 self._save_excel_with_styles(df, file_path)
             else:
                 file_path = self.existing_file_path
@@ -604,11 +606,13 @@ class ExcelTab(QWidget):
 
         existing_file_path = None
         if excel_mode == 'append':
-            desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-            existing_files = [f for f in os.listdir(desktop_path) if f.startswith(f"LOTE {datetime.now().month}") and f.endswith(".xlsx")]
+            documents_path = os.path.join(os.path.expanduser("~"), "Documents")
+            moe_path = os.path.join(documents_path, "Moe")
+            os.makedirs(moe_path, exist_ok=True)
+            existing_files = [f for f in os.listdir(moe_path) if f.startswith(f"LOTE {datetime.now().month}") and f.endswith(".xlsx")]
             if existing_files:
-                existing_files.sort(key=lambda x: os.path.getctime(os.path.join(desktop_path, x)), reverse=True)
-                existing_file_path = os.path.join(desktop_path, existing_files[0])
+                existing_files.sort(key=lambda x: os.path.getctime(os.path.join(moe_path, x)), reverse=True)
+                existing_file_path = os.path.join(moe_path, existing_files[0])
             else:
                 QMessageBox.warning(self, "Advertencia", 
                                   "No se encontró un archivo Excel existente. Se creará uno nuevo.")
