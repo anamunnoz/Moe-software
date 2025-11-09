@@ -174,11 +174,33 @@ class OrderWidget(QWidget):
         if r and r.status_code == 200:
             self.books_data = r.json()
 
-            titles = [f"{b['title']} — {b['author']}" for b in self.books_data]
+            titles = [f"{b['title']} — {b['author']} — Formato: {b['printing_format']}" for b in self.books_data]
             model = QStandardItemModel()
             for title in titles:
                 model.appendRow(QStandardItem(title))
             self.book_completer.setModel(model)
+            self.book_completer.setModel(model)
+            self.book_completer.setCaseSensitivity(Qt.CaseInsensitive)
+            self.book_completer.setFilterMode(Qt.MatchContains)
+            self.book_completer.setCompletionMode(QCompleter.PopupCompletion)
+            self.book_completer.popup().setStyleSheet("""
+                QListView {
+                    background-color: #ffffff;
+                    border: 1px solid #b0b0b0;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    padding: 4px;
+                    selection-background-color: #e3f2fd;
+                    selection-color: #000000;
+                }
+                QListView::item {
+                    padding: 6px 10px;
+                }
+                QListView::item:selected {
+                    background-color: #bbdefb;
+                    border-radius: 4px;
+                }
+            """)
 
     def _load_additives(self):
         r = http_get(API_URL_ADITIVOS)
