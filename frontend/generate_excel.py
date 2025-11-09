@@ -75,13 +75,24 @@ class ExcelGenerationThread(QThread):
                                 return round(paginas / 170 + 0.1, 4)
                         
                         numero_paginas = book.get('number_pages', 0)
+                        color_paginas = book.get('color_pages', 0)
+                        printing_format = book.get('printing_format', 'normal')
+                        formato = 'G' if printing_format.lower().startswith('g') else 'N'
+                        titulo = book.get('title', 'Desconocido')
+                        if color_paginas > 0:
+                            if color_paginas == numero_paginas:
+                                titulo += " (color)"
+                            else:
+                                titulo += " (algunas a color)"
                         lomo_calculado = get_lomo(numero_paginas, tipo_caratula)
+                        
                         
                         row_data = {
                             "Semana": self.semana,
                             "Tipo": tipo,
                             "Orden": order_data['idOrder'],
-                            "Libro": book.get('title', 'Desconocido'),
+                            "Libro": titulo,
+                            "Formato": formato,
                             "Paginas": numero_paginas,
                             "Cant": book_info['quantity'],
                             "Portada": portada,

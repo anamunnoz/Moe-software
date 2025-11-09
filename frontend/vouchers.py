@@ -192,7 +192,7 @@ class VouchersTab(QWidget):
                 margin: 0px;
             }
         """)
-        # 🔹 Generamos el QR personalizado
+        
         client_name = order_data['client']['name']
         phone_ref = order_data['client']['phone_number']
         qr_path = self._generate_qr_for_client(client_name, phone_ref)
