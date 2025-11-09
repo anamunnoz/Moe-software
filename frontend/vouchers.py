@@ -13,6 +13,8 @@ from utils import http_get
 from price.get_rates import convert_to_currency
 from urls import API_URL_ORDERS
 import re
+import qrcode
+from urllib.parse import quote
 
 
 class VouchersTab(QWidget):
@@ -148,6 +150,33 @@ class VouchersTab(QWidget):
             return r.json()
         return None
 
+
+    def _generate_qr_for_client(self, client_name: str, phone_reference: str):
+        numero_whatsapp = "+5355352549"
+        mensaje = (
+            f"Hola MOE! Mi amigo {client_name} ({phone_reference}) me recomendó su negocio! "
+            f"Me gustaría aprovechar el descuento del 10% en mi primera compra por su recomendación 🤍."
+        )
+        mensaje_codificado = quote(mensaje)
+        enlace_whatsapp = f"https://wa.me/{numero_whatsapp}?text={mensaje_codificado}"
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=8,
+            border=2,
+        )
+        qr.add_data(enlace_whatsapp)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        temp_dir = tempfile.gettempdir()
+        file_name = f"qr_{client_name.replace(' ', '_')}_{phone_reference}.png"
+        qr_path = os.path.join(temp_dir, file_name)
+        img.save(qr_path)
+
+        return qr_path
+
     def _create_voucher_image(self, order_data):
         text_edit = QTextEdit()
         text_edit.setReadOnly(True)
@@ -163,13 +192,15 @@ class VouchersTab(QWidget):
                 margin: 0px;
             }
         """)
-        
-        qr_path = "icons/qr.png"
+        # 🔹 Generamos el QR personalizado
+        client_name = order_data['client']['name']
+        phone_ref = order_data['client']['phone_number']
+        qr_path = self._generate_qr_for_client(client_name, phone_ref)
         if not os.path.exists(qr_path):
             qr_html = "<div style='color: red; font-weight: bold; font-size: 10px;'>⚠️ QR no encontrado</div>"
         else:
             absolute_qr_path = os.path.abspath(qr_path)
-            qr_html = f"<img src='file:///{absolute_qr_path}' width='80' height='80' style='float: left; margin-right: 10px;' alt='QR Code'>"
+            qr_html = f"<img src='file:///{absolute_qr_path}' width='100' height='100' style='float: left; margin-right: 10px;' alt='QR Code'>"
         
         voucher_html = self._format_voucher_html(order_data, qr_html)
         text_edit.setHtml(voucher_html)
