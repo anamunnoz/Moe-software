@@ -47,7 +47,7 @@ class Requested_book(models.Model):
     
 class Order(models.Model):
     idOrder = models.AutoField(primary_key=True)
-    type = models.CharField(max_length=20)
+    _type = models.CharField(max_length=100, default = 'Regular')
     address = models.TextField()
     idDelivery = models.ForeignKey(Delivery, on_delete=models.CASCADE)
     idClient = models.ForeignKey(Client, on_delete=models.CASCADE)

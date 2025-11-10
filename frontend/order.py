@@ -70,7 +70,7 @@ class BookItemWidget(QWidget):
         layout.setContentsMargins(10, 5, 10, 5)
         layout.setSpacing(3)
 
-        title_label = QLabel(f"<b>{book_entry['title']}</b> — {book_entry['author']}")
+        title_label = QLabel(f"<b>{book_entry['title']}</b> — {book_entry['author']} ")
         title_label.setStyleSheet("font-size: 14px; color: #333;")
         layout.addWidget(title_label)
 
@@ -548,7 +548,7 @@ class OrderWidget(QWidget):
         if tipo == "servicio regular":
             fecha_entrega = today.addDays(30)
 
-        elif tipo in ("servicio express", "servicio premium"):
+        elif tipo in ("servicio express", "servicio premium express"):
             objetivo = 7 if tipo == "servicio express" else 2
             dias_habiles = 0
             fecha_entrega = today
@@ -843,7 +843,7 @@ class OrderWidget(QWidget):
             return
         book = next(
             (b for b in self.books_data
-            if book_text.lower() in f"{b['title']} — {b['author']}".lower()),
+            if book_text.lower() in f"{b['title']} — {b['author']} — Formato: {b['printing_format']}".lower()),
             None
         )
         if not book:
@@ -950,7 +950,7 @@ class OrderWidget(QWidget):
             payment_advance
         )
         order_data = {
-            "type": self.add_type_combo.currentText().lower(),
+            "_type": self.add_type_combo.currentText().lower(),
             "address": self.add_address_input.text().strip(),
             "idDelivery": id_delivery,
             "idClient": client_id,
@@ -1432,7 +1432,7 @@ class OrderWidget(QWidget):
                 self.modify_payment_method_new.setCurrentIndex(0)
 
             # --- TIPO DE PEDIDO ---
-            order_type = data.get("type", "")
+            order_type = data.get("_type", "")
             self.modify_order_type_current.setText(order_type)
             
             # Cargar tipos de pedido (Regular + servicios)
@@ -1546,7 +1546,7 @@ class OrderWidget(QWidget):
             updated_data = {
                 "address": self.modify_order_address_new.text().strip(),
                 "pay_method": self.modify_payment_method_new.currentText(),
-                "type": self.modify_order_type_new.currentText(),
+                "_type": self.modify_order_type_new.currentText(),
                 "payment_advance": self.modify_payment_advance_new.value(),
                 "total_price": float(self.modify_total_price.text() or 0),
                 "outstanding_payment": float(self.modify_outstanding_payment.text() or 0)
@@ -2053,7 +2053,7 @@ class OrderWidget(QWidget):
             self.delete_order_date.setText(data.get("order_date", "No especificada"))
             self.delete_delivery_date.setText(data.get("delivery_date", "No especificada"))
             self.delete_payment_method.setText(data.get("pay_method", "No especificado"))
-            self.delete_order_type.setText(data.get("type", "No especificado"))
+            self.delete_order_type.setText(data.get("_type", "No especificado"))
 
             # --- INFORMACIÓN FINANCIERA ---
             total_price = data.get("total_price", 0)

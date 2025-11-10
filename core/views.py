@@ -272,8 +272,6 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='create_full_order')
     def create_full_order(self, request):
         data = request.data
-        print("DEBUG - DATA RECIBIDA:", request.data, flush=True)
-
 
         order_serializer = self.get_serializer(data=data)
         order_serializer.is_valid(raise_exception=True)
@@ -287,7 +285,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 requested_book_serializer = RequestedBookSerializer(data={"idBook": rb["idBook"]})
                 requested_book_serializer.is_valid(raise_exception=True)
                 requested_book = requested_book_serializer.save()
-
                 additives = rb.get("additives", [])
                 for add_id in additives:
                     additive_obj = Additive.objects.get(pk=add_id)
@@ -506,14 +503,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         if tipo == "servicio regular":
             fecha_entrega = today + timedelta(days=30)
 
-        elif tipo in ("servicio express", "servicio premium"):
+        elif tipo in ("servicio express", "servicio premium express"):
             objetivo = 7 if tipo == "servicio express" else 2
             dias_habiles = 0
             fecha_entrega = today
 
             while dias_habiles < objetivo:
                 fecha_entrega += timedelta(days=1)
-                if fecha_entrega.weekday() < 5:  # lunes=0, viernes=4
+                if fecha_entrega.weekday() < 5:
                     dias_habiles += 1
 
         else:
@@ -570,8 +567,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             additive_to_add = None
             if new_type_lower.startswith("servicio express"):
                 additive_to_add = "Servicio Express"
-            elif new_type_lower.startswith("servicio premium"):
-                additive_to_add = "Servicio Premium"
+            elif new_type_lower.startswith("servicio premium express"):
+                additive_to_add = "Servicio Premium Express"
 
             if additive_to_add:
                 try:

@@ -116,11 +116,11 @@ class RequestedBookSerializer(serializers.ModelSerializer):
 #? ----------------------------
 class BookOnOrderSerializer(serializers.ModelSerializer):
     idRequested_book_title = serializers.CharField(source='idRequested_book.idBook.title', read_only=True)
-    idOrder_type = serializers.CharField(source='idOrder.type', read_only=True)
+    idOrder_type = serializers.CharField(source='idOrder._type', read_only=True)
 
     class Meta:
         model = Book_on_order
-        fields = ['id', 'idRequested_book', 'idOrder', 'discount', 'ready', 'idRequested_book_title', 'idOrder_type', "quantity"]
+        fields = ['id', 'idRequested_book', 'idOrder', 'discount', 'ready', 'idRequested_book_title', 'idOrder__type', "quantity"]
 
 #? ----------------------------
 #? Order 
@@ -134,7 +134,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'idOrder',
-            'type',
+            '_type',
             'address',
             'idDelivery',
             'delivery_name',
