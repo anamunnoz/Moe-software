@@ -2,7 +2,7 @@
 from django.urls import path, include
 from rest_framework import routers
 from .views import (ClientViewSet, DeliveryViewSet, BookViewSet, AdditiveViewSet, RequestedBookViewSet, 
-OrderViewSet, BookOnOrderViewSet, RequestedBookAdditiveViewSet, DashboardStatsViewSet)
+OrderViewSet, BookOnOrderViewSet, RequestedBookAdditiveViewSet, DashboardStatsViewSet, ProductionCostsViewSet)
 
 router = routers.DefaultRouter()
 router.register(r'clients', ClientViewSet, basename='client')

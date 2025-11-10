@@ -15,6 +15,7 @@ from vouchers import VouchersTab
 from generate_excel import ExcelTab
 from birthday import BirthdayTab
 from stats_card import DashboardWidget
+from production_costs import ProductionCostsPage
 
 class SidebarButton(QPushButton):
     def __init__(self, icon_path, text, parent=None):
@@ -97,6 +98,7 @@ class Sidebar(QWidget):
         self.btn_vauchers = SidebarButton("icons/tickets.png", "Generar vales")
         self.btn_excel = SidebarButton("icons/xls.png", "Generar excel")
         self.btn_birthday = SidebarButton("icons/cake.png", "Cumpleaños de clientes")
+        self.btn_production_costs = SidebarButton("icons/printer.png", "Costos de producción")
 
         layout.addWidget(self.btn_precio)
         layout.addWidget(self.btn_ordenes)
@@ -107,6 +109,7 @@ class Sidebar(QWidget):
         layout.addWidget(self.btn_books)
         layout.addWidget(self.btn_gestion)
         layout.addWidget(self.btn_birthday)
+        layout.addWidget(self.btn_production_costs)
         
 
         layout.addStretch()
@@ -160,6 +163,7 @@ class MainWindow(QMainWindow):
         self.vauchers_page = VouchersTab()
         self.generate_excel_page = ExcelTab()
         self.birthday_page = BirthdayTab()
+        self.production_costs_page = ProductionCostsPage()
         # self.default_page = QWidget()
         self.dashboard_page = DashboardWidget()
         
@@ -178,6 +182,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.vauchers_page)
         self.stack.addWidget(self.generate_excel_page)
         self.stack.addWidget(self.birthday_page)
+        self.stack.addWidget(self.production_costs_page)
 
 
 
@@ -191,6 +196,7 @@ class MainWindow(QMainWindow):
         self.sidebar.btn_vauchers.clicked.connect(lambda: self.stack.setCurrentWidget(self.vauchers_page))
         self.sidebar.btn_excel.clicked.connect(lambda: self.stack.setCurrentWidget(self.generate_excel_page))
         self.sidebar.btn_birthday.clicked.connect(lambda: self.stack.setCurrentWidget(self.birthday_page))
+        self.sidebar.btn_production_costs.clicked.connect(lambda: self.stack.setCurrentWidget(self.production_costs_page))
 
 
         self.sidebar.btn_home = SidebarButton("icons/home.png", "Inicio")
