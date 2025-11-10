@@ -82,6 +82,8 @@ class Requested_book_additive(models.Model):
 
     def __str__(self):
         return f"{self.idRequested_book.idBook.title} + {self.idAdditive.name}"
-    
-    
 
+class Production_costs(models.Model):
+    idProduction_costs = models.AutoField(primary_key=True)
+    product = models.CharField(max_length=100)
+    product_price = models.FloatField()

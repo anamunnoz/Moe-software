@@ -1,13 +1,14 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Client, Delivery, Book, Additive, Requested_book, Book_on_order, Order, Requested_book_additive  
-from .serializers import ClientSerializer, DeliverySerializer, BookSerializer, AdditiveSerializer, RequestedBookSerializer, BookOnOrderSerializer, OrderSerializer, RequestedBookAdditiveSerializer  
+from .models import Client, Delivery, Book, Additive, Requested_book, Book_on_order, Order, Requested_book_additive, Production_costs 
+from .serializers import ClientSerializer, DeliverySerializer, BookSerializer, AdditiveSerializer, RequestedBookSerializer, BookOnOrderSerializer, OrderSerializer, RequestedBookAdditiveSerializer, ProductionCostsSerializer
 from django.db import transaction
 from django.db.models import Q, Count, Sum
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from collections import Counter
+
 
 #? ----------------------------
 #? ClientViewSet
@@ -710,5 +711,27 @@ class DashboardStatsViewSet(viewsets.ViewSet):
                 {'error': f'Error obteniendo top libros: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class ProductionCostsViewSet(viewsets.ModelViewSet):
+    queryset = Production_costs.objects.all()
+    serializer_class = ProductionCostsSerializer
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        product = request.query_params.get('product')
+        if product:
+            qs = qs.filter(product__icontains=product)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['delete'], url_path='delete_by_product')
+    def delete_by_product(self, request):
+        product = request.query_params.get('product')
+        if not product:
+            return Response({'error': 'El parámetro "product" es requerido'}, status=status.HTTP_400_BAD_REQUEST)
+        qs = self.get_queryset().filter(product__icontains=product)
+        deleted = qs.count()
+        qs.delete()
+        return Response({'deleted': deleted})
 
             

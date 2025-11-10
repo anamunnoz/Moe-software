@@ -14,6 +14,7 @@ router.register(r'orders', OrderViewSet)
 router.register(r'books_on_order', BookOnOrderViewSet)
 router.register(r'requested_book_additives', RequestedBookAdditiveViewSet) 
 router.register(r'dashboard', DashboardStatsViewSet, basename='dashboard')
+router.register(r'production_costs', ProductionCostsViewSet, basename='production_costs')
 
 urlpatterns = router.urls
 
