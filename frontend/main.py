@@ -14,6 +14,7 @@ from production import ProductionStatusTab
 from vouchers import VouchersTab
 from generate_excel import ExcelTab
 from birthday import BirthdayTab
+from stats_card import DashboardWidget
 
 class SidebarButton(QPushButton):
     def __init__(self, icon_path, text, parent=None):
@@ -159,13 +160,15 @@ class MainWindow(QMainWindow):
         self.vauchers_page = VouchersTab()
         self.generate_excel_page = ExcelTab()
         self.birthday_page = BirthdayTab()
-        self.default_page = QWidget()
+        # self.default_page = QWidget()
+        self.dashboard_page = DashboardWidget()
         
 
 
-        self.default_page.setStyleSheet("background-color: #FFFFFF;")
+        self.dashboard_page.setStyleSheet("background-color: #FFFFFF;")
 
-        self.stack.addWidget(self.default_page)
+        # self.stack.addWidget(self.default_page)
+        self.stack.addWidget(self.dashboard_page)
         self.stack.addWidget(self.consultas_page)
         self.stack.addWidget(self.books_page)
         self.stack.addWidget(self.client_page)
@@ -182,12 +185,17 @@ class MainWindow(QMainWindow):
         self.sidebar.btn_clientes.clicked.connect(lambda: self.stack.setCurrentWidget(self.client_page))
         self.sidebar.btn_gestion.clicked.connect(lambda: self.stack.setCurrentWidget(self.gestion_page))
         self.sidebar.btn_precio.clicked.connect(lambda: self.stack.setCurrentWidget(self.consultas_page))
-        self.sidebar.btn_ordenes.clicked.connect(lambda: self.stack.setCurrentWidget(self.order_page))
+        # self.sidebar.btn_ordenes.clicked.connect(lambda: self.stack.setCurrentWidget(self.order_page))
+        self.sidebar.btn_ordenes.clicked.connect(self.show_order_page)
         self.sidebar.btn_production.clicked.connect(lambda: self.stack.setCurrentWidget(self.production_page))
         self.sidebar.btn_vauchers.clicked.connect(lambda: self.stack.setCurrentWidget(self.vauchers_page))
         self.sidebar.btn_excel.clicked.connect(lambda: self.stack.setCurrentWidget(self.generate_excel_page))
         self.sidebar.btn_birthday.clicked.connect(lambda: self.stack.setCurrentWidget(self.birthday_page))
 
+
+        self.sidebar.btn_home = SidebarButton("icons/home.png", "Inicio")
+        self.sidebar.layout().insertWidget(1, self.sidebar.btn_home)  # Después del header
+        self.sidebar.btn_home.clicked.connect(lambda: self.stack.setCurrentWidget(self.dashboard_page))
 
 
 
@@ -196,7 +204,22 @@ class MainWindow(QMainWindow):
         layout.setStretch(1, 1)
 
         self.setCentralWidget(container)
-        self.stack.setCurrentWidget(self.default_page)
+        self.stack.setCurrentWidget(self.dashboard_page)
+        self.stack.setCurrentWidget(self.dashboard_page)
+
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.stack.setCurrentWidget(self.dashboard_page)
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+    def show_order_page(self):
+        if hasattr(self.order_page, "reload_data"):
+            self.order_page.reload_data()
+        self.stack.setCurrentWidget(self.order_page)
+
 
 
 if __name__ == "__main__":

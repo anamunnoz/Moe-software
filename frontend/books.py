@@ -137,9 +137,6 @@ class ViewBookCard(QWidget):
             }
         """)
 
-
-
-
 class BooksPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -804,9 +801,6 @@ class BooksPage(QWidget):
         ph_layout.addWidget(icon)
         ph_layout.addWidget(text)
         self.view_info_layout.addWidget(self.view_placeholder)
-
-
-
 
 #* ------------------- STYLE -------------------
     def _apply_styles(self):

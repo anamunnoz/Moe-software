@@ -95,7 +95,6 @@ class GestionPage(QWidget):
         spacer.setFixedHeight(10)
         form_layout.addWidget(spacer)
 
-        # --- Botón principal ---
         btn = QPushButton("Añadir aditivo")
         btn.setObjectName("primaryBtn")
         btn.setCursor(Qt.PointingHandCursor)
@@ -1109,7 +1108,6 @@ class GestionPage(QWidget):
             card_layout.addWidget(zone)
             card_layout.addStretch()
             card_layout.addWidget(price)
-            # card_layout.addWidget(description)
 
             list_item = QListWidgetItem(self.list_delete_mensajeria)
             list_item.setSizeHint(card.sizeHint())
@@ -1297,13 +1295,10 @@ class GestionPage(QWidget):
             zone.setStyleSheet("font-size: 14px; font-weight: 600; color: #333;")
             price = QLabel(f"${a['price']}")
             price.setStyleSheet("font-size: 13px; color: #666;")
-            # description = QLabel(a["description"])
-            # description.setStyleSheet("font-size: 13px; color: #666;")
 
             card_layout.addWidget(zone)
             card_layout.addStretch()
             card_layout.addWidget(price)
-            # mcard_layout.addWidget(description)
 
             list_item = QListWidgetItem(self.list_mensajeria_list)
             list_item.setSizeHint(card.sizeHint())
@@ -1320,13 +1315,13 @@ class GestionPage(QWidget):
             return
 
         list_item = items[0]
-        mensajeria = self._mensajeria_list_cache.get(id(list_item))  # CAMBIO AQUÍ
+        mensajeria = self._mensajeria_list_cache.get(id(list_item))
         if not mensajeria:
             self.btn_copy_selected_m.setEnabled(False)
             self._clear_list_info_mensajeria(show_placeholder=True)
             return
 
-        self.selected_list_mensajeria = mensajeria  # CAMBIO AQUÍ
+        self.selected_list_mensajeria = mensajeria 
         self.btn_copy_selected_m.setEnabled(True)
 
         self._clear_list_info_mensajeria(show_placeholder=False)
@@ -1349,9 +1344,9 @@ class GestionPage(QWidget):
             layout.addStretch()
             return w
 
-        form.addRow(make_icon_line("icons/zone.png", f"Zona: {mensajeria['zone']}"))  # CAMBIO AQUÍ
-        form.addRow(make_icon_line("icons/description.png", f"Descripción: {mensajeria['description']}"))  # CAMBIO AQUÍ
-        form.addRow(make_icon_line("icons/price.png", f"Precio: ${mensajeria['price']}"))  # CAMBIO AQUÍ
+        form.addRow(make_icon_line("icons/zone.png", f"Zona: {mensajeria['zone']}"))
+        form.addRow(make_icon_line("icons/description.png", f"Descripción: {mensajeria['description']}"))
+        form.addRow(make_icon_line("icons/price.png", f"Precio: ${mensajeria['price']}"))
 
         self.info_layout_list_m.addWidget(info_card, alignment=Qt.AlignCenter)
 

@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QTextEdit, QMessageBox, QFormLayout, QListWidget, QListWidgetItem, QDialog,
     QCompleter, QSpinBox, QTabWidget, QGroupBox, QListView, QSizePolicy,
     QDialogButtonBox, QCheckBox, QScrollArea, QDateEdit,  QApplication,
-    QGridLayout
+    QGridLayout, QFrame
 )
 from PySide6.QtCore import Qt, Signal, QDate
 from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
@@ -17,10 +17,14 @@ from urls import (
 )
 from datetime import datetime
 from price.get_rates import convert_to_currency
+from price.price import calculate_price
 from price_service import PriceService
 import json
 import requests
 import traceback
+
+with open('./price/fabrication.json', 'r', encoding='utf-8') as f:
+    costs = json.load(f)
 
 #? ------------------------------
 #? Diálogo para crear nuevo cliente
@@ -53,6 +57,41 @@ class NewClientDialog(QDialog):
             "identity": self.identity_edit.text().strip(),
             "phone_number": self.phone_edit.text().strip()
         }
+
+#? --------------------------------
+#? Diálogo para libros de una orden
+#? --------------------------------
+class BookItemWidget(QWidget):
+    def __init__(self, book_entry):
+        super().__init__()
+        self.book_entry = book_entry
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setSpacing(3)
+
+        title_label = QLabel(f"<b>{book_entry['title']}</b> — {book_entry['author']} ")
+        title_label.setStyleSheet("font-size: 14px; color: #333;")
+        layout.addWidget(title_label)
+
+        quantity_discount_label = QLabel(f"Cantidad: {book_entry['quantity']} | Descuento: {book_entry['discount']}%")
+        quantity_discount_label.setStyleSheet("font-size: 12px; color: #555;")
+        layout.addWidget(quantity_discount_label)
+
+        additives = book_entry.get("additives_names", [])
+        if additives:
+            additives_label = QLabel("Servicios extras: " + ", ".join(additives))
+
+            additives_label.setStyleSheet("font-size: 12px; color: #777; font-style: italic;")
+            layout.addWidget(additives_label)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #F9F9F9;
+                border: none;
+                border-radius: 6px;
+            }
+        """)
 
 class OrderWidget(QWidget):
     def __init__(self):
@@ -110,6 +149,7 @@ class OrderWidget(QWidget):
         self._load_books()
         self._load_additives()
 
+
 #* -------------------- CARGAR DATOS DESDE BACKEND --------------------
     def _load_clients(self):
         self.clients_data = []
@@ -134,11 +174,33 @@ class OrderWidget(QWidget):
         if r and r.status_code == 200:
             self.books_data = r.json()
 
-            titles = [f"{b['title']} — {b['author']}" for b in self.books_data]
+            titles = [f"{b['title']} — {b['author']} — Formato: {b['printing_format']}" for b in self.books_data]
             model = QStandardItemModel()
             for title in titles:
                 model.appendRow(QStandardItem(title))
             self.book_completer.setModel(model)
+            self.book_completer.setModel(model)
+            self.book_completer.setCaseSensitivity(Qt.CaseInsensitive)
+            self.book_completer.setFilterMode(Qt.MatchContains)
+            self.book_completer.setCompletionMode(QCompleter.PopupCompletion)
+            self.book_completer.popup().setStyleSheet("""
+                QListView {
+                    background-color: #ffffff;
+                    border: 1px solid #b0b0b0;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    padding: 4px;
+                    selection-background-color: #e3f2fd;
+                    selection-color: #000000;
+                }
+                QListView::item {
+                    padding: 6px 10px;
+                }
+                QListView::item:selected {
+                    background-color: #bbdefb;
+                    border-radius: 4px;
+                }
+            """)
 
     def _load_additives(self):
         r = http_get(API_URL_ADITIVOS)
@@ -348,7 +410,9 @@ class OrderWidget(QWidget):
 
         books_layout.addWidget(QLabel("Libros añadidos:"))
         self.add_selected_books_list = QListWidget()
-        self.add_selected_books_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.add_selected_books_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.add_selected_books_list.setMinimumHeight(250)
+        self.add_selected_books_list.setSpacing(5)
         books_layout.addWidget(self.add_selected_books_list)
 
         # Botón para eliminar libro seleccionado
@@ -416,6 +480,8 @@ class OrderWidget(QWidget):
         self.add_payment_advance_edit = QLineEdit()
         self.add_payment_advance_edit.setPlaceholderText("0.00")
         self.add_payment_advance_edit.textChanged.connect(self._update_totals_add)
+        self.add_payment_advance_edit.textEdited.connect(self._update_totals_add)
+
         details_layout.addRow(make_icon_label("icons/money.png", "Pago adelantado"), self.add_payment_advance_edit)
 
         # Pago pendiente
@@ -454,17 +520,48 @@ class OrderWidget(QWidget):
                 if additive['idAdditive'] == add_id:
                     book_additives.append(additive)
                     break
-        return PriceService.calculate_book_price(
-            book_data=book_data,
-            additives_data=book_additives,
-            discount=book_entry.get('discount', 0),
-            quantity=book_entry.get('quantity', 1)
-        )
+        caratula_price = 0
+        other_additives_price = 0
+        for additive in book_additives:
+            if "carátula" in additive.get("name", "").lower():
+                caratula_price = additive.get("price", 0)
+            else:
+                other_additives_price += additive.get("price", 0)
+
+        number_of_pages = book_data.get('number_pages', 0)
+        color_pages = book_data.get("color_pages", 0)
+        printing_format = book_data.get("printing_format", "NORMAL")
+        book_base_price = calculate_price(number_of_pages, color_pages, printing_format, costs)
+
+        total_price_before_discount = book_base_price + caratula_price + other_additives_price
+        discount_percentage = book_entry.get('discount', 0)
+        if discount_percentage > 0:
+            total_price_before_discount *= (1 - discount_percentage / 100)
+        final_price = total_price_before_discount * book_entry.get('quantity', 1)
+        
+        return final_price
 
     def _update_delivery_date_add(self):
         today = QDate.currentDate()
-        days = 5 if self.add_type_combo.currentText().lower() == "servicio express" else 28
-        self.add_delivery_date.setDate(today.addDays(days))
+        tipo = self.add_type_combo.currentText().strip().lower()
+       
+        if tipo == "servicio regular":
+            fecha_entrega = today.addDays(30)
+
+        elif tipo in ("servicio express", "servicio premium express"):
+            objetivo = 7 if tipo == "servicio express" else 2
+            dias_habiles = 0
+            fecha_entrega = today
+
+            while dias_habiles < objetivo:
+                fecha_entrega = fecha_entrega.addDays(1)
+                if fecha_entrega.dayOfWeek() < 6:
+                    dias_habiles += 1
+
+        else:
+            fecha_entrega = today.addDays(30)
+        self.add_delivery_date.setDate(fecha_entrega)
+
 
     def _on_delivery_selected(self, text):
         selected_zone = text.strip()
@@ -592,6 +689,9 @@ class OrderWidget(QWidget):
             delivery_price = float(delivery_text) if delivery_text else 0
         except ValueError:
             delivery_price = 0
+
+        total_books_price = sum(self._calculate_book_price(book) for book in self.selected_books)
+        total_order_price = total_books_price + delivery_price
         
         order_calculation = PriceService.calculate_order_price(
             selected_books=self.selected_books,
@@ -666,10 +766,12 @@ class OrderWidget(QWidget):
                             caratula_price = additive['price']
                         elif additive["name"].lower().startswith("servicio"):
                             service_additives.append(additive)
-            
-            base_price = book_data.get('number_pages', 0) if book_data else 0
 
-            precio_regular = base_price + caratula_price
+            number_of_pages = book_data.get('number_pages', 0)
+            color_pages = book_data.get("color_pages", 0)
+            printing_format = book_data.get("printing_format", "NORMAL")
+            precio_regular = calculate_price(number_of_pages, color_pages, printing_format, costs) + caratula_price
+
             cup_price = convert_to_currency(precio_regular, 'USD', 'CUP')
             mlc_price = convert_to_currency(precio_regular, 'USD', 'MLC')
             
@@ -741,7 +843,7 @@ class OrderWidget(QWidget):
             return
         book = next(
             (b for b in self.books_data
-            if book_text.lower() in f"{b['title']} — {b['author']}".lower()),
+            if book_text.lower() in f"{b['title']} — {b['author']} — Formato: {b['printing_format']}".lower()),
             None
         )
         if not book:
@@ -772,7 +874,11 @@ class OrderWidget(QWidget):
         f"Cantidad: {book_entry['quantity']}"
         )
 
-        self.add_selected_books_list.addItem(item_text)
+        item = QListWidgetItem()
+        widget = BookItemWidget(book_entry)
+        item.setSizeHint(widget.sizeHint())
+        self.add_selected_books_list.addItem(item)
+        self.add_selected_books_list.setItemWidget(item, widget)
         self.add_book_input.clear()
         self.selected_additives = []
         self.select_services_btn.setText("Seleccionar servicios extras")
@@ -844,7 +950,7 @@ class OrderWidget(QWidget):
             payment_advance
         )
         order_data = {
-            "type": self.add_type_combo.currentText().lower(),
+            "_type": self.add_type_combo.currentText().lower(),
             "address": self.add_address_input.text().strip(),
             "idDelivery": id_delivery,
             "idClient": client_id,
@@ -865,6 +971,7 @@ class OrderWidget(QWidget):
                 "quantity": book_entry["quantity"]
             }
             order_data["requested_books"].append(book_data)
+        
 
         r = http_post(f"{API_URL_ORDERS}create_full_order/", order_data)
         if not r or r.status_code not in (200, 201):
@@ -920,6 +1027,13 @@ class OrderWidget(QWidget):
 
     def _clear_client_selection(self):
         self.add_client_input.clear()
+
+    def reload_data(self):
+        self._load_clients()
+        self._load_deliveries()
+        self._load_books()
+        self._load_additives()
+    
 
     
 #* -------------------- PESTAÑA MODIFICAR ORDEN --------------------
@@ -1301,7 +1415,7 @@ class OrderWidget(QWidget):
             # --- DIRECCIÓN ACTUAL ---
             address = data.get("address", "")
             self.modify_order_address_current.setText(address)
-            self.modify_order_address_new.setText(address)  # También poner en el campo modificable
+            self.modify_order_address_new.setText(address) 
 
             # --- MUNICIPIO ACTUAL ---
             delivery_zone = data.get("delivery_zone", "No especificado")
@@ -1311,7 +1425,6 @@ class OrderWidget(QWidget):
             pay_method = data.get("pay_method", "")
             self.modify_payment_method_current.setText(pay_method)
             
-            # Establecer el método de pago actual en el combo box
             index = self.modify_payment_method_new.findText(pay_method)
             if index >= 0:
                 self.modify_payment_method_new.setCurrentIndex(index)
@@ -1319,13 +1432,12 @@ class OrderWidget(QWidget):
                 self.modify_payment_method_new.setCurrentIndex(0)
 
             # --- TIPO DE PEDIDO ---
-            order_type = data.get("type", "")
+            order_type = data.get("_type", "")
             self.modify_order_type_current.setText(order_type)
             
             # Cargar tipos de pedido (Regular + servicios)
             self._load_order_types_for_modify()
             
-            # Establecer el tipo de pedido actual en el combo box
             index = self.modify_order_type_new.findText(order_type)
             if index >= 0:
                 self.modify_order_type_new.setCurrentIndex(index)
@@ -1434,7 +1546,7 @@ class OrderWidget(QWidget):
             updated_data = {
                 "address": self.modify_order_address_new.text().strip(),
                 "pay_method": self.modify_payment_method_new.currentText(),
-                "type": self.modify_order_type_new.currentText(),
+                "_type": self.modify_order_type_new.currentText(),
                 "payment_advance": self.modify_payment_advance_new.value(),
                 "total_price": float(self.modify_total_price.text() or 0),
                 "outstanding_payment": float(self.modify_outstanding_payment.text() or 0)
@@ -1515,8 +1627,11 @@ class OrderWidget(QWidget):
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
             
-            base_price = book.get('number_pages', 0)
-            precio_base_caratula = base_price + caratula_price
+            number_of_pages = book.get('number_pages', 0)
+            color_pages = book.get("color_pages", 0)
+            printing_format = book.get("printing_format", "NORMAL")
+            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format, costs) + caratula_price
+
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
             mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
             
@@ -1606,7 +1721,7 @@ class OrderWidget(QWidget):
             QGroupBox {
                 font-weight: bold;
                 font-size: 16px;
-                border: 2px solid #b8b8b8;
+                border: none;
                 border-radius: 10px;
                 margin-top: 10px;
                 padding: 12px;
@@ -1800,18 +1915,31 @@ class OrderWidget(QWidget):
         """)
         books_layout = QVBoxLayout(books_group)
 
-        self.delete_books_text = QTextEdit()
-        self.delete_books_text.setReadOnly(True)
-        self.delete_books_text.setFixedHeight(200)
-        self.delete_books_text.setStyleSheet("""
-            QTextEdit {
+        books_scroll = QScrollArea()
+        books_scroll.setWidgetResizable(True)
+        books_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        books_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        books_scroll.setFixedHeight(250)
+        books_scroll.setStyleSheet("""
+            QScrollArea {
                 border: 1px solid #ddd;
                 border-radius: 5px;
                 background-color: white;
-                font-size: 12px;
+            }
+            QScrollArea > QWidget > QWidget {
+                background-color: white;
             }
         """)
-        books_layout.addWidget(self.delete_books_text)
+
+        self.delete_books_container = QWidget()
+        self.delete_books_layout = QVBoxLayout(self.delete_books_container)
+        self.delete_books_layout.setAlignment(Qt.AlignTop)
+        self.delete_books_layout.setSpacing(10)
+        self.delete_books_layout.setContentsMargins(10, 10, 10, 10)
+
+        books_scroll.setWidget(self.delete_books_container)
+        books_layout.addWidget(books_scroll)
+
         details_layout.addWidget(books_group)
 
         main_layout.addWidget(details_group)
@@ -1838,7 +1966,7 @@ class OrderWidget(QWidget):
             }
         """)
         self.delete_btn.clicked.connect(self._delete_order)
-        self.delete_btn.setEnabled(False)  # Deshabilitado hasta que se seleccione una orden
+        self.delete_btn.setEnabled(False)
         main_layout.addWidget(self.delete_btn, alignment=Qt.AlignCenter)
 
         scroll.setWidget(container)
@@ -1861,8 +1989,15 @@ class OrderWidget(QWidget):
                 item_text = f"Orden #{order['idOrder']} — {order['client_name']} ({date})"
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
+
+                if order.get("done", False):
+                    item.setIcon(QIcon("icons/check.png"))  
+                else:
+                    item.setIcon(QIcon("icons/pendiente.png"))
+
                 self.delete_order_list.addItem(item)
                 return
+
         r = http_get(API_URL_ORDERS)
         if not r or r.status_code != 200:
             QMessageBox.warning(self, "Error", "No se pudieron obtener las órdenes del servidor.")
@@ -1884,6 +2019,10 @@ class OrderWidget(QWidget):
                 item_text = f"Orden #{order['idOrder']} — {order['client_name']} ({date})"
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
+                if order.get("done", False):
+                    item.setIcon(QIcon("icons/check.png"))  
+                else:
+                    item.setIcon(QIcon("icons/pendiente.png"))
                 results.append(item)
 
         if results:
@@ -1914,7 +2053,7 @@ class OrderWidget(QWidget):
             self.delete_order_date.setText(data.get("order_date", "No especificada"))
             self.delete_delivery_date.setText(data.get("delivery_date", "No especificada"))
             self.delete_payment_method.setText(data.get("pay_method", "No especificado"))
-            self.delete_order_type.setText(data.get("type", "No especificado"))
+            self.delete_order_type.setText(data.get("_type", "No especificado"))
 
             # --- INFORMACIÓN FINANCIERA ---
             total_price = data.get("total_price", 0)
@@ -1928,40 +2067,23 @@ class OrderWidget(QWidget):
             self.delete_delivery_price.setText(f"{delivery_price:.2f} USD")
 
             # --- LIBROS Y ADITIVOS ---
-            books_text = ""
+            for i in reversed(range(self.delete_books_layout.count())):
+                widget = self.delete_books_layout.itemAt(i).widget()
+                if widget:
+                    widget.deleteLater()
+
             books = data.get("books", [])
             
-            for i, book_info in enumerate(books, 1):
-                book = book_info['book']
-                additives = book_info['additives']
-                discount = book_info['discount']
-                quantity = book_info['quantity']
-                ready = "✅" if book_info.get('ready', False) else "❌"
+            if not books:
+                no_books_label = QLabel("No hay libros en esta orden")
+                no_books_label.setAlignment(Qt.AlignCenter)
+                no_books_label.setStyleSheet("color: #7f8c8d; font-style: italic; padding: 20px;")
+                self.delete_books_layout.addWidget(no_books_label)
+            else:
+                for i, book_info in enumerate(books, 1):
+                    book_widget = self._create_book_widget_delete(i, book_info)
+                    self.delete_books_layout.addWidget(book_widget)
 
-                books_text += f"📖 LIBRO {i}:\n"
-                books_text += f"   Título: {book.get('title', 'Desconocido')}\n"
-                books_text += f"   Autor: {book.get('author', 'Sin autor')}\n"
-                books_text += f"   Páginas: {book.get('number_pages', 0)}\n"
-                books_text += f"   Formato: {book.get('printing_format', 'No especificado')}\n"
-                books_text += f"   Páginas color: {book.get('color_pages', 0)}\n"
-                books_text += f"   Cantidad: {quantity}\n"
-                books_text += f"   Descuento: {discount}%\n"
-                books_text += f"   Listo: {ready}\n"
-
-                # Aditivos
-                if additives:
-                    books_text += "   🛠️ Servicios:\n"
-                    for additive in additives:
-                        books_text += f"      • {additive['name']}: {additive['price']} USD\n"
-                else:
-                    books_text += "   🛠️ Servicios: Ninguno\n"
-                
-                books_text += "\n"
-
-            if not books_text:
-                books_text = "No hay libros en esta orden."
-
-            self.delete_books_text.setPlainText(books_text)
             self.delete_btn.setEnabled(True)
 
         except Exception as e:
@@ -1973,6 +2095,25 @@ class OrderWidget(QWidget):
             return
 
         order_id = self.current_delete_order_id
+
+        try:
+            r = http_get(f"{API_URL_ORDERS}{order_id}/")
+            if not r or r.status_code != 200:
+                QMessageBox.warning(self, "Error", f"No se pudo verificar el estado de la orden #{order_id}.")
+                return
+            order_data = r.json()
+            if order_data.get("done", False):
+                QMessageBox.warning(
+                    self,
+                    "No permitido",
+                    f"La orden #{order_id} ya está marcada como finalizada y no puede eliminarse. 🚫"
+                )
+                return
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo verificar la orden antes de eliminar.\n{str(e)}")
+            return
+
         confirm = QMessageBox.question(
             self,
             "Confirmar eliminación",
@@ -2023,6 +2164,99 @@ class OrderWidget(QWidget):
         self.delete_delivery_price.setText("")
         self.delete_books_text.clear()
         self.delete_btn.setEnabled(False)
+
+    def _create_book_widget_delete(self, index, book_info):
+        book_widget = QFrame()
+        book_widget.setStyleSheet("""
+            QFrame {
+                background-color: #ffffff;
+                border: none;
+                border-radius: 10px;
+                padding: 10px 14px;
+            }
+        """)
+
+        layout = QVBoxLayout(book_widget)
+        layout.setSpacing(6)
+
+        # ------------------- HEADER -------------------
+        header_layout = QHBoxLayout()
+
+        title_label = QLabel(book_info['book'].get('title', 'Desconocido'))
+        title_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #2c3e50;")
+
+        header_layout.addWidget(title_label)
+        header_layout.addStretch()
+        layout.addLayout(header_layout)
+
+        # ------------------- DETALLES -------------------
+        book_details_layout = QFormLayout()
+        book_details_layout.setHorizontalSpacing(10)
+        book_details_layout.setVerticalSpacing(3)
+
+        book = book_info['book']
+
+        # Campos básicos
+        author_label = QLabel(book.get('author', 'No especificado'))
+        pages_label = QLabel(f"{book.get('number_pages', 0)} páginas")
+        format_label = QLabel(book.get('printing_format', 'No especificado'))
+        color_label = QLabel(f"{book.get('color_pages', 0)} páginas color")
+        quantity_label = QLabel(f"{book_info.get('quantity', 1)} unidad(es)")
+        discount_label = QLabel(f"{book_info.get('discount', 0)}%")
+        ready = book_info.get('ready', False)
+        if ready:
+            state_label= QLabel("✅ Listo")
+        else:
+            state_label= QLabel("⏳ Pendiente")
+
+        for lbl in [pages_label, format_label, color_label, quantity_label, discount_label, state_label, author_label]:
+            lbl.setStyleSheet("color: #555; font-size: 13px;")
+
+        book_details_layout.addRow("👤 Author:", author_label)
+        book_details_layout.addRow("📄 Páginas:", pages_label)
+        book_details_layout.addRow("🖨️ Formato:", format_label)
+        book_details_layout.addRow("🎨 Color:", color_label)
+        book_details_layout.addRow("🔢 Cantidad:", quantity_label)
+        book_details_layout.addRow("💰 Descuento:", discount_label)
+        book_details_layout.addRow("⚠️ Estado:", state_label)
+
+        layout.addLayout(book_details_layout)
+        # ------------------- SERVICIOS / ADITIVOS -------------------
+        additives = book_info.get('additives', [])
+        if additives:
+            additives_group = QGroupBox("🛠️ Servicios incluidos")
+            additives_group.setStyleSheet("""
+                QGroupBox {
+                    font-weight: 600;
+                    font-size: 13px;
+                    border: none;
+                    border-radius: 8px;
+                    margin-top: 6px;
+                    padding: 6px 8px;
+                    background-color: #fafafa;
+                }
+                QGroupBox::title {
+                    color: #2c3e50;
+                    font-size: 13px;
+                    margin-bottom: 4px;
+                    subcontrol-origin: margin;
+                    left: 5px;
+                    padding: 0 4px;
+                }
+            """)
+
+            additives_layout = QVBoxLayout(additives_group)
+            additives_layout.setSpacing(3)
+
+            for additive in additives:
+                name_label = QLabel(f"• {additive['name']}")
+                name_label.setStyleSheet("font-size: 13px; color: #2c3e50;")
+                additives_layout.addWidget(name_label)
+
+            layout.addWidget(additives_group)
+
+        return book_widget
+
 
         
 #* ------------------- STYLE -------------------

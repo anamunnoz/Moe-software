@@ -1,7 +1,8 @@
 # core/urls.py
 from django.urls import path, include
 from rest_framework import routers
-from .views import ClientViewSet, DeliveryViewSet, BookViewSet, AdditiveViewSet, RequestedBookViewSet, OrderViewSet, BookOnOrderViewSet, RequestedBookAdditiveViewSet
+from .views import (ClientViewSet, DeliveryViewSet, BookViewSet, AdditiveViewSet, RequestedBookViewSet, 
+OrderViewSet, BookOnOrderViewSet, RequestedBookAdditiveViewSet, DashboardStatsViewSet)
 
 router = routers.DefaultRouter()
 router.register(r'clients', ClientViewSet, basename='client')
@@ -12,6 +13,7 @@ router.register(r'requested_books', RequestedBookViewSet)
 router.register(r'orders', OrderViewSet)
 router.register(r'books_on_order', BookOnOrderViewSet)
 router.register(r'requested_book_additives', RequestedBookAdditiveViewSet) 
+router.register(r'dashboard', DashboardStatsViewSet, basename='dashboard')
 
 urlpatterns = router.urls
 

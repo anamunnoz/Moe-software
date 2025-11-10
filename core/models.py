@@ -47,7 +47,7 @@ class Requested_book(models.Model):
     
 class Order(models.Model):
     idOrder = models.AutoField(primary_key=True)
-    type = models.CharField(max_length=20)
+    _type = models.CharField(max_length=100, default = 'Regular')
     address = models.TextField()
     idDelivery = models.ForeignKey(Delivery, on_delete=models.CASCADE)
     idClient = models.ForeignKey(Client, on_delete=models.CASCADE)
@@ -62,9 +62,11 @@ class Order(models.Model):
     added_to_excel = models.BooleanField(default=False)
     
 
-    def __str__(self) -> str:
-        return self.type
-
+    def save(self, *args, **kwargs):
+        self.outstanding_payment = round(self.total_price - self.payment_advance, 2)
+        if self.outstanding_payment < 0:
+            self.outstanding_payment = 0
+        super().save(*args, **kwargs)
 
 class Book_on_order(models.Model):
     idRequested_book = models.ForeignKey(Requested_book, on_delete=models.CASCADE)

@@ -417,7 +417,6 @@ class ConsultasPage(QWidget):
 
         if aditivos_txt != "": 
             msg += f"\n\nServicios adicionales:\n{aditivos_txt}"
-            #msg += f"\n💰 Total final: ${total_final}"
 
         clipboard = QApplication.clipboard()
         clipboard.setText(msg)

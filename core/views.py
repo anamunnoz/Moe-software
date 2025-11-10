@@ -4,7 +4,11 @@ from rest_framework.response import Response
 from .models import Client, Delivery, Book, Additive, Requested_book, Book_on_order, Order, Requested_book_additive  
 from .serializers import ClientSerializer, DeliverySerializer, BookSerializer, AdditiveSerializer, RequestedBookSerializer, BookOnOrderSerializer, OrderSerializer, RequestedBookAdditiveSerializer  
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
+from datetime import datetime, timedelta, date
+from django.utils import timezone
+from collections import Counter
+
 #? ----------------------------
 #? ClientViewSet
 #? ----------------------------
@@ -256,14 +260,9 @@ class AdditiveViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    
-
-
 class RequestedBookViewSet(viewsets.ModelViewSet):
     queryset = Requested_book.objects.all()
     serializer_class = RequestedBookSerializer
-
-
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().select_related('idClient', 'idDelivery').prefetch_related('Requested_book__idBook')
@@ -286,7 +285,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 requested_book_serializer = RequestedBookSerializer(data={"idBook": rb["idBook"]})
                 requested_book_serializer.is_valid(raise_exception=True)
                 requested_book = requested_book_serializer.save()
-
                 additives = rb.get("additives", [])
                 for add_id in additives:
                     additive_obj = Additive.objects.get(pk=add_id)
@@ -305,7 +303,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
                 created_requested_books.append(requested_book.idRequested_book)
         except Exception as e:
-            print('except')
             transaction.set_rollback(True)
             return Response(
                 {"detail": f"Error creando libros o aditivos: {str(e)}"},
@@ -455,19 +452,73 @@ class OrderViewSet(viewsets.ModelViewSet):
             order = self.get_object()
         except Order.DoesNotExist:
             return Response({"error": "Orden no encontrada"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # INCLUIR 'done' EN LOS CAMPOS PERMITIDOS
-        allowed_fields = ['address', 'pay_method', 'type', 'payment_advance', 'total_price', 'outstanding_payment', 'idDelivery', 'done', 'added_to_excel']
+
+        allowed_fields = [
+            'address', 'pay_method', 'type', 'payment_advance',
+            'total_price', 'idDelivery', 'done', 'added_to_excel'
+        ]
         update_data = {k: v for k, v in request.data.items() if k in allowed_fields}
-        
-        serializer = self.get_serializer(order, data=update_data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        
+
+        current_type = order.type
+
+        for field, value in update_data.items():
+            if field == "idDelivery" and value:
+                try:
+                    delivery = Delivery.objects.get(pk=value)
+                    setattr(order, field, delivery)
+                except Delivery.DoesNotExist:
+                    continue
+            else:
+                setattr(order, field, value)
+
+        new_type = update_data.get("type")
+        if new_type and new_type != current_type:
+            self._update_order_type_additives(order, new_type)
+            self._recalculate_delivery_date(order, new_type)
+
+        try:
+            payment_advance = float(order.payment_advance or 0)
+            total_price = float(order.total_price or 0)
+        except ValueError:
+            payment_advance = 0.0
+            total_price = 0.0
+
+        order.outstanding_payment = round(max(total_price - payment_advance, 0), 2)
+
+        order.save()
+
+        serializer = self.get_serializer(order)
         return Response({
             "order": serializer.data,
             "detail": "Datos de la orden actualizados correctamente"
         }, status=status.HTTP_200_OK)
+
+
+    
+    def _recalculate_delivery_date(self, order, order_type: str):
+
+        today = date.today()
+        tipo = order_type.strip().lower()
+
+        if tipo == "servicio regular":
+            fecha_entrega = today + timedelta(days=30)
+
+        elif tipo in ("servicio express", "servicio premium express"):
+            objetivo = 7 if tipo == "servicio express" else 2
+            dias_habiles = 0
+            fecha_entrega = today
+
+            while dias_habiles < objetivo:
+                fecha_entrega += timedelta(days=1)
+                if fecha_entrega.weekday() < 5:
+                    dias_habiles += 1
+
+        else:
+            fecha_entrega = today + timedelta(days=30)
+
+        order.delivery_date = fecha_entrega.strftime("%Y-%m-%d")
+        order.save()
+
 
 
     @transaction.atomic
@@ -495,9 +546,45 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.save()
 
         return Response({"detail": "Estados actualizados correctamente", "done": order.done})
-
-
     
+    def _update_order_type_additives(self, order: Order, new_type: str):
+        current_type_lower = order.type.lower()
+        new_type_lower = new_type.lower()
+        book_links = Book_on_order.objects.filter(idOrder=order).select_related('idRequested_book')
+
+        for link in book_links:
+            requested_book = link.idRequested_book
+            quantity = link.quantity
+
+            old_additives = Requested_book_additive.objects.filter(
+                idRequested_book=requested_book,
+                idAdditive__name__istartswith="servicio"
+            )
+            for old in old_additives:
+                order.total_price -= float(old.idAdditive.price) * quantity
+            old_additives.delete()
+
+            additive_to_add = None
+            if new_type_lower.startswith("servicio express"):
+                additive_to_add = "Servicio Express"
+            elif new_type_lower.startswith("servicio premium express"):
+                additive_to_add = "Servicio Premium Express"
+
+            if additive_to_add:
+                try:
+                    additive_obj = Additive.objects.get(name__iexact=additive_to_add)
+                    Requested_book_additive.objects.create(
+                        idRequested_book=requested_book,
+                        idAdditive=additive_obj
+                    )
+                    order.total_price += float(additive_obj.price) * quantity
+                except Additive.DoesNotExist:
+                    continue
+
+        order.type = new_type
+        order.save()
+
+  
 class BookOnOrderViewSet(viewsets.ModelViewSet):
     queryset = Book_on_order.objects.all().select_related('idRequested_book__idBook', 'idOrder')
     serializer_class = BookOnOrderSerializer
@@ -519,3 +606,109 @@ class RequestedBookAdditiveViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+
+#? ----------------------------
+#? Estadísticas Dashboard
+#? ----------------------------
+class DashboardStatsViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=['get'], url_path='main_stats')
+    def main_stats(self, request):
+        try:
+            total_orders = Order.objects.count()
+            total_clients = Client.objects.count()
+            total_books_ordered = Book_on_order.objects.aggregate(total=Sum('quantity'))['total'] or 0
+
+            today = timezone.now().date()
+            current_year = today.year
+            current_month = today.month
+            month_str = str(current_month).zfill(2)
+
+            month_orders_qs = Order.objects.filter(order_date__startswith=f"{current_year}-{month_str}")
+            month_orders = month_orders_qs.count()
+            month_income = month_orders_qs.aggregate(total=Sum('total_price'))['total'] or 0
+
+            return Response({
+                'total_orders': total_orders,
+                'total_clients': total_clients,
+                'month_orders': month_orders,
+                'total_books_ordered': total_books_ordered,
+                'month_income': round(month_income, 2)
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo estadísticas: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='monthly_orders_chart')
+    def monthly_orders_chart(self, request):
+        try:
+            today = timezone.now().date()
+            current_year = today.year
+            current_month = today.month
+            month_str = str(current_month).zfill(2)
+            orders = Order.objects.filter(
+                order_date__startswith=f"{current_year}-{month_str}"
+            ).values('order_date')
+
+            daily_counts = {}
+            for order in orders:
+                try:
+                    order_date = datetime.strptime(order['order_date'], '%Y-%m-%d').date()
+                    day_str = order_date.strftime('%Y-%m-%d')
+                    daily_counts[day_str] = daily_counts.get(day_str, 0) + 1
+                except ValueError:
+                    continue
+            
+
+            first_day_month = today.replace(day=1)
+            if today.month == 12:
+                last_day_month = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+            else:
+                last_day_month = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
+            
+            chart_data = []
+            current_date = first_day_month
+            while current_date <= last_day_month:
+                day_str = current_date.strftime('%Y-%m-%d')
+                chart_data.append({
+                    'date': day_str,
+                    'orders': daily_counts.get(day_str, 0),
+                    'day': current_date.day
+                })
+                current_date += timedelta(days=1)
+            
+            return Response({'chart_data': chart_data})
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo datos de gráfica: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='top_books_month')
+    def top_books_month(self, request):
+        try:
+            today = timezone.now().date()
+            current_year = today.year
+            current_month = today.month
+            month_str = str(current_month).zfill(2)
+            book_orders = Book_on_order.objects.filter(
+                idOrder__order_date__startswith=f"{current_year}-{month_str}"
+            ).select_related('idRequested_book__idBook')
+
+            book_counts = Counter()
+            for book_order in book_orders:
+                book_title = book_order.idRequested_book.idBook.title
+                book_counts[book_title] += book_order.quantity
+
+            top_books = book_counts.most_common(5)
+            result = [{'book': book, 'orders': count} for book, count in top_books]
+            
+            return Response({'top_books': result})
+        except Exception as e:
+            return Response(
+                {'error': f'Error obteniendo top libros: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+            
