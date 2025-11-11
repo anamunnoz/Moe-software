@@ -1,17 +1,13 @@
 from price.price import calculate_price
 import json
 
-with open('./price/fabrication.json', 'r', encoding='utf-8') as f:
-    costs = json.load(f)
-
-
 class PriceService:
     @staticmethod
     def calculate_book_price(book_data, additives_data, discount=0, quantity=1):
         number_of_pages = book_data.get('number_pages', 0)
         color_pages = book_data.get("color_pages", 0)
         printing_format = book_data.get("printing_format", "Normal")
-        base_price = calculate_price(number_of_pages, color_pages, printing_format, costs)
+        base_price = calculate_price(number_of_pages, color_pages, printing_format)
         cover_price = 0
         service_price = 0
         

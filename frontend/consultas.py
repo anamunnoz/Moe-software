@@ -10,11 +10,6 @@ from price.get_rates import convert_to_currency
 from price.price import calculate_price
 import json
 
-
-with open('./price/fabrication.json', 'r', encoding='utf-8') as f:
-    costs = json.load(f)
-
-
 class MultiSelectComboBox(QComboBox):
     selection_changed = Signal(list)
 
@@ -370,16 +365,16 @@ class ConsultasPage(QWidget):
         number_of_pages = book.get("number_pages", 0)
         color_pages = book.get("color_pages", 0)
         printing_format = book.get("printing_format", "NORMAL")
-        precio_regular = calculate_price(number_of_pages, color_pages, printing_format, costs)
+        precio_regular = calculate_price(number_of_pages, color_pages, printing_format)
         cup_price = convert_to_currency(precio_regular, 'USD', 'CUP')
         mlc_price = convert_to_currency(precio_regular, 'USD', 'MLC')
-        precios.append(f"Regular: {precio_regular} USD | {cup_price} CUP | {mlc_price} MLC")
+        precios.append(f"Normal: {precio_regular} USD | {cup_price} CUP | {mlc_price} MLC")
 
         r = http_get(API_URL_ADITIVOS)
         if r and r.status_code == 200:
             aditivos = r.json()
             car_dura = next((a for a in aditivos if a["name"].lower() == "carátula dura"), None)
-            solapa = next((a for a in aditivos if a["name"].lower() == "solapa"), None)
+            solapa = next((a for a in aditivos if a["name"].lower() == "carátula con solapa"), None)
 
             if car_dura:
                 cup_price = convert_to_currency(precio_regular + car_dura['price'], 'USD', 'CUP')

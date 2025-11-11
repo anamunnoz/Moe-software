@@ -117,7 +117,7 @@ class RequestedBookSerializer(serializers.ModelSerializer):
 #? ----------------------------
 class BookOnOrderSerializer(serializers.ModelSerializer):
     idRequested_book_title = serializers.CharField(source='idRequested_book.idBook.title', read_only=True)
-    idOrder_type = serializers.CharField(source='idOrder._type', read_only=True)
+    idOrder_type = serializers.CharField(source='idOrder.__type', read_only=True)
 
     class Meta:
         model = Book_on_order

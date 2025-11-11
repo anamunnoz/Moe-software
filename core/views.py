@@ -55,7 +55,7 @@ class ClientViewSet(viewsets.ModelViewSet):
             for order in orders:
                 orders_data.append({
                     'idOrder': order.idOrder,
-                    'type': order.type,
+                    '_type': order._type,
                     'address': order.address,
                     'delivery_zone': order.idDelivery.zone if order.idDelivery else None,
                     'delivery_price': order.idDelivery.price if order.idDelivery else 0,
@@ -381,7 +381,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         order_data = {
             "idOrder": order.idOrder,
-            "type": order.type,
+            "_type": order._type,
             "address": order.address,
             "order_date": order.order_date,
             "delivery_date": order.delivery_date,
@@ -455,12 +455,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({"error": "Orden no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
         allowed_fields = [
-            'address', 'pay_method', 'type', 'payment_advance',
+            'address', 'pay_method', '_type', 'payment_advance',
             'total_price', 'idDelivery', 'done', 'added_to_excel'
         ]
         update_data = {k: v for k, v in request.data.items() if k in allowed_fields}
 
-        current_type = order.type
+        current_type = order._type
 
         for field, value in update_data.items():
             if field == "idDelivery" and value:
@@ -472,7 +472,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             else:
                 setattr(order, field, value)
 
-        new_type = update_data.get("type")
+        new_type = update_data.get("_type")
         if new_type and new_type != current_type:
             self._update_order_type_additives(order, new_type)
             self._recalculate_delivery_date(order, new_type)
@@ -549,7 +549,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response({"detail": "Estados actualizados correctamente", "done": order.done})
     
     def _update_order_type_additives(self, order: Order, new_type: str):
-        current_type_lower = order.type.lower()
+        current_type_lower = order._type.lower()
         new_type_lower = new_type.lower()
         book_links = Book_on_order.objects.filter(idOrder=order).select_related('idRequested_book')
 
@@ -582,7 +582,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 except Additive.DoesNotExist:
                     continue
 
-        order.type = new_type
+        order._type = new_type
         order.save()
 
   

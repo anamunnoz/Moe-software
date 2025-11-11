@@ -23,9 +23,6 @@ import json
 import requests
 import traceback
 
-with open('./price/fabrication.json', 'r', encoding='utf-8') as f:
-    costs = json.load(f)
-
 #? ------------------------------
 #? Diálogo para crear nuevo cliente
 #? ------------------------------
@@ -531,7 +528,7 @@ class OrderWidget(QWidget):
         number_of_pages = book_data.get('number_pages', 0)
         color_pages = book_data.get("color_pages", 0)
         printing_format = book_data.get("printing_format", "NORMAL")
-        book_base_price = calculate_price(number_of_pages, color_pages, printing_format, costs)
+        book_base_price = calculate_price(number_of_pages, color_pages, printing_format)
 
         total_price_before_discount = book_base_price + caratula_price + other_additives_price
         discount_percentage = book_entry.get('discount', 0)
@@ -770,7 +767,7 @@ class OrderWidget(QWidget):
             number_of_pages = book_data.get('number_pages', 0)
             color_pages = book_data.get("color_pages", 0)
             printing_format = book_data.get("printing_format", "NORMAL")
-            precio_regular = calculate_price(number_of_pages, color_pages, printing_format, costs) + caratula_price
+            precio_regular = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
 
             cup_price = convert_to_currency(precio_regular, 'USD', 'CUP')
             mlc_price = convert_to_currency(precio_regular, 'USD', 'MLC')
@@ -1630,7 +1627,7 @@ class OrderWidget(QWidget):
             number_of_pages = book.get('number_pages', 0)
             color_pages = book.get("color_pages", 0)
             printing_format = book.get("printing_format", "NORMAL")
-            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format, costs) + caratula_price
+            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
 
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
             mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
