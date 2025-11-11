@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QFrame, QListWidgetItem, QApplication, QComboBox, QListView
 )
 from PySide6.QtCore import Qt, Signal, QEvent
-from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
+from PySide6.QtGui import QPixmap,  QStandardItemModel, QStandardItem
 from utils import http_get
 from urls import API_URL_BOOKS, API_URL_ADITIVOS, API_URL_MENSAJERIAS
 from price.get_rates import convert_to_currency

@@ -2,7 +2,7 @@ import requests
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QTabWidget, QListWidget, QMessageBox, QFormLayout, QFrame, QListWidgetItem, QDoubleSpinBox,
-    QSizePolicy, QScrollArea, QGridLayout
+    QSizePolicy, QScrollArea
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap

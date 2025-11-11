@@ -3,25 +3,21 @@ from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, QPushButton,
     QTextEdit, QMessageBox, QFormLayout, QListWidget, QListWidgetItem, QDialog,
     QCompleter, QSpinBox, QTabWidget, QGroupBox, QListView, QSizePolicy,
-    QDialogButtonBox, QCheckBox, QScrollArea, QDateEdit,  QApplication,
-    QGridLayout, QFrame
-)
-from PySide6.QtCore import Qt, Signal, QDate
+    QDialogButtonBox, QCheckBox, QScrollArea, QDateEdit,  QApplication, QFrame)
+from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
-from datetime import date, timedelta
+from datetime import date, datetime
 from utils import http_get, http_post, http_delete, http_put, make_icon_label
 from urls import (
     API_URL_ORDERS, API_URL_CLIENTES, API_URL_MENSAJERIAS, API_URL_BOOKS,
     API_URL_ADITIVOS, API_URL_REQUESTED_BOOKS, API_URL_REQUESTED_BOOK_ADDITIVES,
     API_URL_BOOK_ON_ORDER
 )
-from datetime import datetime
 from price.get_rates import convert_to_currency
 from price.price import calculate_price
 from price_service import PriceService
 import json
 import requests
-import traceback
 
 #? ------------------------------
 #? Diálogo para crear nuevo cliente

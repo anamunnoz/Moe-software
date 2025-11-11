@@ -1,7 +1,7 @@
 import requests
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel,
-    QListWidget, QListWidgetItem, QCheckBox, QMessageBox, QFrame,
+    QListWidget, QListWidgetItem, QCheckBox, QMessageBox,
     QScrollArea, QGroupBox, QSizePolicy
 )
 from PySide6.QtCore import Qt, QSize

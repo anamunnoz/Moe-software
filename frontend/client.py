@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem, QApplication, QScrollArea, QDialog, QTextEdit
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon, QPixmap, QMouseEvent
+from PySide6.QtGui import QPixmap, QMouseEvent
 from urls import API_URL_CLIENTES, API_URL_BOOKS, API_URL_ADITIVOS, API_URL_CLIENTES, API_URL_ORDERS
 from utils import http_get, http_post, http_patch, http_delete, make_icon_label
 from price.get_rates import convert_to_currency

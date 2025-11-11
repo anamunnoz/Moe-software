@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QLabel, QHBoxLayout, QGraphicsDropShadowEffect, QStackedWidget
 )
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
-from PySide6.QtGui import QIcon, QColor, QPixmap, QFont
+from PySide6.QtGui import QIcon, QColor, QFont
 import sys
 from books import BooksPage
 from client import ClientsPage

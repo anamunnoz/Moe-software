@@ -1,13 +1,13 @@
 import os
 import tempfile
 from docx import Document
-from docx.shared import Inches, Cm, Pt
+from docx.shared import Cm, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel,
-    QMessageBox, QGroupBox, QGridLayout, QFrame, QTextEdit, QApplication
+    QMessageBox, QTextEdit
 )
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QTextDocument, QTextCursor, QFont
 from utils import http_get
 from price.get_rates import convert_to_currency

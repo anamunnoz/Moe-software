@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem, QApplication, QDoubleSpinBox
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QPixmap
 from urls import API_URL_ADITIVOS, API_URL_MENSAJERIAS
 from utils import http_get, http_post, http_patch, http_delete, make_icon_label
 from price.get_rates import convert_to_currency
