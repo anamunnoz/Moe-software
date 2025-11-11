@@ -699,8 +699,7 @@ class ExcelTab(QWidget):
         QMessageBox.information(
             self, 
             "Éxito", 
-            f"Reporte Excel generado exitosamente:\n{file_path}\n\n"
-            f"Órdenes procesadas: {order_count}\n"
+            f"Reporte Excel generado exitosamente:\n{file_path}"
         )
 
     def _on_excel_error(self, error_message):

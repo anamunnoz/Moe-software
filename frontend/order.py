@@ -527,7 +527,7 @@ class OrderWidget(QWidget):
 
         number_of_pages = book_data.get('number_pages', 0)
         color_pages = book_data.get("color_pages", 0)
-        printing_format = book_data.get("printing_format", "NORMAL")
+        printing_format = book_data.get("printing_format", "normal").lower()
         book_base_price = calculate_price(number_of_pages, color_pages, printing_format)
 
         total_price_before_discount = book_base_price + caratula_price + other_additives_price
@@ -766,7 +766,7 @@ class OrderWidget(QWidget):
 
             number_of_pages = book_data.get('number_pages', 0)
             color_pages = book_data.get("color_pages", 0)
-            printing_format = book_data.get("printing_format", "NORMAL")
+            printing_format = book_data.get("printing_format", "normal").lower()
             precio_regular = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
 
             cup_price = convert_to_currency(precio_regular, 'USD', 'CUP')
@@ -1626,7 +1626,7 @@ class OrderWidget(QWidget):
             
             number_of_pages = book.get('number_pages', 0)
             color_pages = book.get("color_pages", 0)
-            printing_format = book.get("printing_format", "NORMAL")
+            printing_format = book.get("printing_format", "normal").lower()
             precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
 
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
@@ -1690,7 +1690,7 @@ class OrderWidget(QWidget):
             order_data['address']):
             mensaje += f"— Dirección de entrega: {order_data['address']}\n"
         
-        mensaje += f"— Servicio de entrega: {order_data['type']}\n"
+        mensaje += f"— Servicio de entrega: {order_data['_type']}\n"
         mensaje += f"— Método de pago: {order_data['pay_method']}\n\n"
         mensaje += "🔆 Conoce nuestros trabajos en instagram.com/moe.libros"
         return mensaje
@@ -2026,7 +2026,8 @@ class OrderWidget(QWidget):
             for item in results:
                 self.delete_order_list.addItem(item)
         else:
-            QMessageBox.information(self, "Sin resultados", "No se encontraron órdenes con ese criterio.")
+            if not getattr(self, "_suppress_no_results_msg", False):
+                QMessageBox.information(self, "Sin resultados", "No se encontraron órdenes con ese criterio.")
 
     def _load_order_delete(self, order_id):
         try:
@@ -2134,7 +2135,9 @@ class OrderWidget(QWidget):
             if resp and resp.status_code in (200, 204):
                 QMessageBox.information(self, "Éxito", f"Orden #{order_id} eliminada correctamente.")
                 self._clear_delete_form()
+                self._suppress_no_results_msg = True
                 self._search_orders_delete_unified()
+                self._suppress_no_results_msg = False
             else:
                 error_msg = f"No se pudo eliminar la orden #{order_id}."
                 if resp:
@@ -2159,7 +2162,6 @@ class OrderWidget(QWidget):
         self.delete_payment_advance.setText("")
         self.delete_outstanding_payment.setText("")
         self.delete_delivery_price.setText("")
-        self.delete_books_text.clear()
         self.delete_btn.setEnabled(False)
 
     def _create_book_widget_delete(self, index, book_info):

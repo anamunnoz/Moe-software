@@ -2,13 +2,14 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QLineEdit, QPushButton, QListWidget, QMessageBox, QLabel, QTabWidget,
     QHBoxLayout, QFrame, QListWidgetItem, QApplication, QComboBox, QListView
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
 from utils import http_get
 from urls import API_URL_BOOKS, API_URL_ADITIVOS, API_URL_MENSAJERIAS
 from price.get_rates import convert_to_currency
 from price.price import calculate_price
 import json
+import re
 
 class MultiSelectComboBox(QComboBox):
     selection_changed = Signal(list)
@@ -21,6 +22,7 @@ class MultiSelectComboBox(QComboBox):
         self.view().viewport().installEventFilter(self) 
 
         self.setEditable(True)
+        self.lineEdit().installEventFilter(self)
         self.lineEdit().setReadOnly(True)
         self.lineEdit().setPlaceholderText("Selecciona uno o más aditivos...")
         self.lineEdit().setAlignment(Qt.AlignLeft)
@@ -41,13 +43,21 @@ class MultiSelectComboBox(QComboBox):
         self._update_selection()
 
     def eventFilter(self, source, event):
-        from PySide6.QtCore import QEvent
+        if source is self.lineEdit() and event.type() == QEvent.MouseButtonPress:
+            if self.view().isVisible():
+                self.hidePopup()
+            else:
+                self.showPopup()
+            return True
+
         if source is self.view().viewport() and event.type() == QEvent.MouseButtonRelease:
             index = self.view().indexAt(event.pos())
             if index.isValid():
                 self._on_item_pressed(index)
                 return True
+
         return super().eventFilter(source, event)
+
 
     def _update_selection(self):
         self._selected_items = [
@@ -66,6 +76,17 @@ class MultiSelectComboBox(QComboBox):
 
     def selected_items(self):
         return self._selected_items
+    
+    def mousePressEvent(self, event):
+        if self.rect().contains(event.pos()):
+            if self.view().isVisible():
+                self.hidePopup()
+            else:
+                self.showPopup()
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+
 
 
 
@@ -351,10 +372,16 @@ class ConsultasPage(QWidget):
         r = http_get(API_URL_ADITIVOS)
         if r and r.status_code == 200:
             aditivos = r.json()
-            for a in aditivos:
-                self.aditivo_combo.add_checkable_item(f"{a['name']} (+${a['price']})", a)
+            servicios = [a for a in aditivos if a['name'].lower().startswith("servicio")]
+            
+            if servicios:
+                for a in servicios:
+                    self.aditivo_combo.add_checkable_item(f"{a['name']} (+${a['price']})", a)
+            else:
+                self.aditivo_combo.add_checkable_item("No hay servicios disponibles", None)
         else:
             self.aditivo_combo.add_checkable_item("No se pudieron cargar aditivos", None)
+
 
         card_layout.addWidget(self.aditivo_combo)
 
@@ -364,26 +391,38 @@ class ConsultasPage(QWidget):
         precios = []
         number_of_pages = book.get("number_pages", 0)
         color_pages = book.get("color_pages", 0)
-        printing_format = book.get("printing_format", "NORMAL")
+        printing_format = book.get("printing_format", "normal").lower()
+
         precio_regular = calculate_price(number_of_pages, color_pages, printing_format)
         cup_price = convert_to_currency(precio_regular, 'USD', 'CUP')
         mlc_price = convert_to_currency(precio_regular, 'USD', 'MLC')
         precios.append(f"Normal: {precio_regular} USD | {cup_price} CUP | {mlc_price} MLC")
 
         r = http_get(API_URL_ADITIVOS)
-        if r and r.status_code == 200:
-            aditivos = r.json()
-            car_dura = next((a for a in aditivos if a["name"].lower() == "carátula dura"), None)
-            solapa = next((a for a in aditivos if a["name"].lower() == "carátula con solapa"), None)
+        if not (r and r.status_code == 200):
+            return precios
 
-            if car_dura:
-                cup_price = convert_to_currency(precio_regular + car_dura['price'], 'USD', 'CUP')
-                mlc_price = convert_to_currency(precio_regular + car_dura['price'], 'USD', 'MLC')
-                precios.append(f"Carátula Dura: {precio_regular + car_dura['price']} USD | {cup_price} CUP | {mlc_price} MLC")
-            if solapa:
-                cup_price = convert_to_currency(precio_regular + solapa['price'], 'USD', 'CUP')
-                mlc_price = convert_to_currency(precio_regular + solapa['price'], 'USD', 'MLC')
-                precios.append(f"Solapa: {precio_regular + solapa['price']} USD | {cup_price} CUP | {mlc_price} MLC")
+        aditivos = r.json()
+
+        caratulas = [
+            a for a in aditivos
+            if a["name"].lower().startswith("carátula")
+            and f"({printing_format})" in a["name"].lower()
+        ]
+
+
+        tipos_caratulas = ["carátula dura", "carátula solapa", "carátula premium"]
+
+        for tipo in tipos_caratulas:
+            car = next((a for a in caratulas if a["name"].lower().startswith(tipo)), None)
+            if car:
+                total_usd = precio_regular + car['price']
+                cup_price = convert_to_currency(total_usd, 'USD', 'CUP')
+                mlc_price = convert_to_currency(total_usd, 'USD', 'MLC')
+
+                nombre_limpio = re.sub(r"\s*\(.*?\)", "", car["name"]).strip()
+
+                precios.append(f"{nombre_limpio.capitalize()}: {total_usd} USD | {cup_price} CUP | {mlc_price} MLC")
 
         return precios
 
@@ -541,6 +580,7 @@ class ConsultasPage(QWidget):
             self.result_mensajeria.addItem(item)
             self.result_mensajeria.setItemWidget(item, card)
             item.mensajeria_data = d
+        self.btn_copy_group.setEnabled(True)
 
 
     def _on_mensajeria_selected(self):

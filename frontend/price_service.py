@@ -6,7 +6,7 @@ class PriceService:
     def calculate_book_price(book_data, additives_data, discount=0, quantity=1):
         number_of_pages = book_data.get('number_pages', 0)
         color_pages = book_data.get("color_pages", 0)
-        printing_format = book_data.get("printing_format", "Normal")
+        printing_format = book_data.get("printing_format", "normal").lower()
         base_price = calculate_price(number_of_pages, color_pages, printing_format)
         cover_price = 0
         service_price = 0

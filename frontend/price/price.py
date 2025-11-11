@@ -14,7 +14,7 @@ def calculate_price(pages, color_pages, printing_format):
     costs = get_costs_from_api()
     if pages <= 0 or color_pages < 0 or color_pages > pages:
         return 0
-    if printing_format == "Normal":
+    if printing_format == "normal":
         num_hojas_BN = pages / 4
         num_hojas_color = color_pages / 4
 
@@ -44,7 +44,7 @@ def calculate_price(pages, color_pages, printing_format):
 
         return precio_venta_usd_tapa_normal
 
-    if printing_format == "Grande":
+    if printing_format == "grande":
         num_hojas_BN = pages / 2
         num_hojas_color = color_pages / 2
 
