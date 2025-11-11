@@ -8,7 +8,8 @@ from .models import (
     Requested_book,
     Book_on_order,
     Order,
-    Requested_book_additive
+    Requested_book_additive,
+    Production_costs
 )
 
 #? ----------------------------
@@ -120,7 +121,7 @@ class BookOnOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book_on_order
-        fields = ['id', 'idRequested_book', 'idOrder', 'discount', 'ready', 'idRequested_book_title', 'idOrder__type', "quantity"]
+        fields = ['id', 'idRequested_book', 'idOrder', 'discount', 'ready', 'idRequested_book_title', 'idOrder_type', "quantity"]
 
 #? ----------------------------
 #? Order 
@@ -156,3 +157,8 @@ class OrderSerializer(serializers.ModelSerializer):
         requested_books_data = validated_data.pop('requested_books', [])
         order = Order.objects.create(**validated_data)
         return order
+
+class ProductionCostsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Production_costs
+        fields = ['idProduction_costs', 'product', 'product_price']

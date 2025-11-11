@@ -14,7 +14,6 @@ def http_get(url, params=None):
         r = requests.get(url, params=params, timeout=5)
         return r
     except Exception as e:
-        print(f"[ERROR GET] {e}")
         return None
 
 def http_post(url, data):
@@ -22,7 +21,6 @@ def http_post(url, data):
         r = requests.post(url, json=data, timeout=5)
         return r
     except Exception as e:
-        print(f"[ERROR POST] {e}")
         return None
 
 def http_delete(url, params=None):
@@ -30,7 +28,6 @@ def http_delete(url, params=None):
         r = requests.delete(url, params=params, timeout=5)
         return r
     except Exception as e:
-        print(f"[ERROR DELETE] {e}")
         return None
 
 def http_patch(url, data=None, params=None):
@@ -38,7 +35,6 @@ def http_patch(url, data=None, params=None):
         r = requests.patch(url, json=data, params=params, timeout=5)
         return r
     except Exception as e:
-        print(f"[ERROR PATCH] {e}")
         return None
 
 def http_put(url, data):

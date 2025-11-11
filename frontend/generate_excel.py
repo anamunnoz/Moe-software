@@ -4,15 +4,14 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QMessageBox, QGroupBox, QProgressBar, QFrame, QComboBox,
+    QMessageBox, QGroupBox, QProgressBar, QComboBox,
     QRadioButton, QButtonGroup
 )
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QPixmap
 from utils import http_get, http_put
 from urls import API_URL_ORDERS
-from datetime import datetime 
-from openpyxl.utils import get_column_letter
+from datetime import datetime
 
 
 class ExcelGenerationThread(QThread):
@@ -699,8 +698,7 @@ class ExcelTab(QWidget):
         QMessageBox.information(
             self, 
             "Éxito", 
-            f"Reporte Excel generado exitosamente:\n{file_path}\n\n"
-            f"Órdenes procesadas: {order_count}\n"
+            f"Reporte Excel generado exitosamente:\n{file_path}"
         )
 
     def _on_excel_error(self, error_message):

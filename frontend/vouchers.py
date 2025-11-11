@@ -1,13 +1,13 @@
 import os
 import tempfile
 from docx import Document
-from docx.shared import Inches, Cm, Pt
+from docx.shared import Cm, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel,
-    QMessageBox, QGroupBox, QGridLayout, QFrame, QTextEdit, QApplication
+    QMessageBox, QTextEdit
 )
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QTextDocument, QTextCursor, QFont
 from utils import http_get
 from price.get_rates import convert_to_currency
@@ -201,7 +201,7 @@ class VouchersTab(QWidget):
             qr_html = "<div style='color: red; font-weight: bold; font-size: 10px;'>⚠️ QR no encontrado</div>"
         else:
             absolute_qr_path = os.path.abspath(qr_path)
-            qr_html = f"<img src='file:///{absolute_qr_path}' width='100' height='100' style='float: left; margin-right: 10px;' alt='QR Code'>"
+            qr_html = f"<img src='file:///{absolute_qr_path}' width='120' height='120' style='float: left; margin-right: 10px;' alt='QR Code'>"
         
         voucher_html = self._format_voucher_html(order_data, qr_html)
         text_edit.setHtml(voucher_html)
@@ -292,7 +292,7 @@ class VouchersTab(QWidget):
             order_data['address']):
             text += f"— Dirección de entrega: {order_data['address']}<br>"
         
-        text += f"— Servicio de entrega: {order_data['type']}<br>"
+        text += f"— Servicio de entrega: {order_data['_type']}<br>"
         text += f"— Método de pago: {order_data['pay_method']}<br>"
          
         html_content = f"""

@@ -48,7 +48,7 @@ class Requested_book(models.Model):
 class Order(models.Model):
     idOrder = models.AutoField(primary_key=True)
     _type = models.CharField(max_length=100, default = 'Regular')
-    address = models.TextField()
+    address = models.TextField(null=True, blank=True)
     idDelivery = models.ForeignKey(Delivery, on_delete=models.CASCADE)
     idClient = models.ForeignKey(Client, on_delete=models.CASCADE)
     order_date = models.CharField(max_length=10)
@@ -82,6 +82,8 @@ class Requested_book_additive(models.Model):
 
     def __str__(self):
         return f"{self.idRequested_book.idBook.title} + {self.idAdditive.name}"
-    
-    
 
+class Production_costs(models.Model):
+    idProduction_costs = models.AutoField(primary_key=True)
+    product = models.CharField(max_length=100)
+    product_price = models.FloatField()

@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem, QApplication, QDoubleSpinBox
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QPixmap
 from urls import API_URL_ADITIVOS, API_URL_MENSAJERIAS
 from utils import http_get, http_post, http_patch, http_delete, make_icon_label
 from price.get_rates import convert_to_currency
@@ -781,7 +781,7 @@ class GestionPage(QWidget):
         self.add_zona = QLineEdit()
         self.add_descripcion = QLineEdit()
         self.add_precio_m = QDoubleSpinBox()
-        self.add_precio_m.setRange(1, 100000.00)
+        self.add_precio_m.setRange(0, 100000.00)
         self.add_precio_m.setDecimals(2)  
         self.add_precio_m.setSingleStep(5)
 
@@ -903,7 +903,7 @@ class GestionPage(QWidget):
         self.edit_zona_m = QLineEdit()
         self.edit_descripcion_m = QLineEdit()
         self.edit_precio_m = QDoubleSpinBox()
-        self.edit_precio_m.setRange(0.01, 100000.00)
+        self.edit_precio_m.setRange(0, 100000.00)
         self.edit_precio_m.setDecimals(2) 
         self.edit_precio_m.setSingleStep(5)
 

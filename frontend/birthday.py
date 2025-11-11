@@ -7,7 +7,6 @@ from PySide6.QtGui import QPixmap, QCursor
 from utils import http_get
 from urls import API_URL_CLIENTES
 from datetime import datetime, timedelta
-import calendar
 
 
 class BirthdayTab(QWidget):

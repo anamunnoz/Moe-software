@@ -397,7 +397,7 @@ class BooksPage(QWidget):
         self.update_title.setText(book.get("title", ""))
         self.update_author.setText(book.get("author", ""))
         self.update_pages.setValue(book.get("number_pages", 1))
-        self.update_format.setCurrentText(book.get("printing_format", "Normal"))
+        self.update_format.setCurrentText(book.get("printing_format", "normal"))
         self.update_color_pages.setValue(book.get("color_pages", 0))
 
         self.btn_update.setEnabled(True)

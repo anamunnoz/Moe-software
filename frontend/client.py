@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem, QApplication, QScrollArea, QDialog, QTextEdit
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon, QPixmap, QMouseEvent
+from PySide6.QtGui import QPixmap, QMouseEvent
 from urls import API_URL_CLIENTES, API_URL_BOOKS, API_URL_ADITIVOS, API_URL_CLIENTES, API_URL_ORDERS
 from utils import http_get, http_post, http_patch, http_delete, make_icon_label
 from price.get_rates import convert_to_currency
@@ -28,7 +28,7 @@ class ClickableOrderCard(QFrame):
 
         order_id = QLabel(f"Orden #{order_data['idOrder']}")
         order_id.setStyleSheet("font-weight: 600; color: #222; font-size: 14px;")
-        service = (" ").join(order_data['type'].split(" ")[1:]) if order_data['type'].lower()  != 'regular' else order_data['type']
+        service = (" ").join(order_data['_type'].split(" ")[1:]) if order_data['_type'].lower()  != 'regular' else order_data['_type']
         order_type = QLabel(f"📦 {service}")
         order_type.setStyleSheet("color: #555; font-size: 13px;")
 
@@ -891,7 +891,7 @@ class ClientsPage(QWidget):
         order_id = QLabel(f"Orden #{order['idOrder']}")
         order_id.setStyleSheet("font-weight: bold; color: #333; font-size: 14px;")
         
-        order_type = QLabel(f"📦 {order['type'].title()}")
+        order_type = QLabel(f"📦 {order['_type'].title()}")
         order_type.setStyleSheet("color: #666; font-size: 13px;")
         
         order_status = QLabel("✅ Completada" if order['done'] else "🟡 Pendiente")
@@ -1066,7 +1066,7 @@ class ClientsPage(QWidget):
             order_data['address']):
             mensaje += f"— Dirección de entrega: {order_data['address']}\n"
         
-        mensaje += f"— Servicio de entrega: {order_data['type']}\n"
+        mensaje += f"— Servicio de entrega: {order_data['_type']}\n"
         mensaje += f"— Método de pago: {order_data['pay_method']}\n\n"
         
         mensaje += "🔆 Conoce nuestros trabajos en instagram.com/moe.libros"
