@@ -4,10 +4,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QEvent
 from PySide6.QtGui import QPixmap,  QStandardItemModel, QStandardItem
-from utils import http_get
-from urls import API_URL_BOOKS, API_URL_ADITIVOS, API_URL_MENSAJERIAS
-from price.get_rates import convert_to_currency
-from price.price import calculate_price
+from frontend.utils import http_get
+from frontend.urls import API_URL_BOOKS, API_URL_ADITIVOS, API_URL_MENSAJERIAS
+from frontend.price.get_rates import convert_to_currency
+from frontend.price.price import calculate_price
 import json
 import re
 
@@ -106,7 +106,7 @@ class ConsultasPage(QWidget):
 
         header = QHBoxLayout()
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/asking.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/asking.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title = QLabel("Consulta de precios")
         title.setStyleSheet("font-size: 35px; font-weight: 700; color: #222;")
         header.addWidget(icon)
@@ -1058,7 +1058,7 @@ class ConsultasPage(QWidget):
             }
 
             QComboBox::down-arrow {
-                image: url(icons/arrow.png);
+                image: url(frontend/icons/arrow.png);
                 width: 15px;
                 height: 15px;
             }

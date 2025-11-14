@@ -6,9 +6,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QMouseEvent
-from urls import API_URL_CLIENTES, API_URL_BOOKS, API_URL_ADITIVOS, API_URL_CLIENTES, API_URL_ORDERS
-from utils import http_get, http_post, http_patch, http_delete, make_icon_label
-from price.get_rates import convert_to_currency
+from frontend.urls import API_URL_CLIENTES, API_URL_BOOKS, API_URL_ADITIVOS, API_URL_CLIENTES, API_URL_ORDERS
+from frontend.utils import http_get, http_post, http_patch, http_delete, make_icon_label
+from frontend.price.get_rates import convert_to_currency
 
 class ClickableOrderCard(QFrame):
     clicked = Signal(dict)
@@ -151,7 +151,7 @@ class ClientsPage(QWidget):
 
         header = QHBoxLayout()
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/customers.png").scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/customers.png").scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title = QLabel("Manejo de clientes")
         title.setStyleSheet("font-size: 35px; font-weight: 700; color: #222;")
         header.addWidget(icon)
@@ -195,9 +195,9 @@ class ClientsPage(QWidget):
         self.add_identity.returnPressed.connect(self._add_cliente)
 
 
-        inner_form.addRow(make_icon_label("icons/name.png", "Nombre"), self.add_name)
-        inner_form.addRow(make_icon_label("icons/phone.png", "Teléfono"), self.add_phone)
-        inner_form.addRow(make_icon_label("icons/identity.png", "Carnet de identidad"), self.add_identity)
+        inner_form.addRow(make_icon_label("frontend/icons/name.png", "Nombre"), self.add_name)
+        inner_form.addRow(make_icon_label("frontend/icons/phone.png", "Teléfono"), self.add_phone)
+        inner_form.addRow(make_icon_label("frontend/icons/identity.png", "Carnet de identidad"), self.add_identity)
 
         form_layout.addWidget(form_card)
         spacer = QWidget()
@@ -282,9 +282,9 @@ class ClientsPage(QWidget):
         self.edit_phone = QLineEdit()
         self.edit_identity = QLineEdit()
 
-        form_layout.addRow(make_icon_label("icons/name.png", "Nombre"), self.edit_name)
-        form_layout.addRow(make_icon_label("icons/phone.png", "Teléfono"), self.edit_phone)
-        form_layout.addRow(make_icon_label("icons/identity.png", "Carnet de identidad"), self.edit_identity)
+        form_layout.addRow(make_icon_label("frontend/icons/name.png", "Nombre"), self.edit_name)
+        form_layout.addRow(make_icon_label("frontend/icons/phone.png", "Teléfono"), self.edit_phone)
+        form_layout.addRow(make_icon_label("frontend/icons/identity.png", "Carnet de identidad"), self.edit_identity)
 
         self.btn_update_cliente = QPushButton("Aplicar cambios")
         self.btn_update_cliente.setObjectName("primaryBtn")
@@ -406,7 +406,7 @@ class ClientsPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_pix = QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        icon_pix = QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(icon_pix)
         icon_label.setAlignment(Qt.AlignCenter)
 
@@ -509,9 +509,9 @@ class ClientsPage(QWidget):
             layout.addStretch()
             return w
 
-        form.addRow(make_icon_line("icons/name.png", f"Nombre: {client['name']}"))
-        form.addRow(make_icon_line("icons/phone.png", f"Teléfono: {client['phone_number']}"))
-        form.addRow(make_icon_line("icons/identity.png", f"Carnet de identidad: {client['identity']}"))
+        form.addRow(make_icon_line("frontend/icons/name.png", f"Nombre: {client['name']}"))
+        form.addRow(make_icon_line("frontend/icons/phone.png", f"Teléfono: {client['phone_number']}"))
+        form.addRow(make_icon_line("frontend/icons/identity.png", f"Carnet de identidad: {client['identity']}"))
 
         self.delete_info_layout.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -529,7 +529,7 @@ class ClientsPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_pix = QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        icon_pix = QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(icon_pix)
         icon_label.setAlignment(Qt.AlignCenter)
 
@@ -661,7 +661,7 @@ class ClientsPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
         
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         text = QLabel("Busca un cliente y selecciona uno para ver sus direcciones y órdenes.")
         text.setAlignment(Qt.AlignCenter)
         text.setStyleSheet("font-size: 15px; color: #555; font-weight: 500;")
@@ -752,10 +752,10 @@ class ClientsPage(QWidget):
                 layout.addStretch()
                 return w
 
-            client_layout.addWidget(make_icon_line("icons/client.png", f"Nombre: {client['name']}"))
-            client_layout.addWidget(make_icon_line("icons/identity.png", f"Carnet de identidad: {client['identity']}"))
-            client_layout.addWidget(make_icon_line("icons/phone.png", f"Teléfono: {client['phone_number']}"))
-            client_layout.addWidget(make_icon_line("icons/orders.png", f"Total de órdenes: {client['total_orders']}"))
+            client_layout.addWidget(make_icon_line("frontend/icons/client.png", f"Nombre: {client['name']}"))
+            client_layout.addWidget(make_icon_line("frontend/icons/identity.png", f"Carnet de identidad: {client['identity']}"))
+            client_layout.addWidget(make_icon_line("frontend/icons/phone.png", f"Teléfono: {client['phone_number']}"))
+            client_layout.addWidget(make_icon_line("frontend/icons/orders.png", f"Total de órdenes: {client['total_orders']}"))
 
             self.copy_client_btn = QPushButton("Copiar Cliente")
             self.copy_client_btn.setObjectName("secondaryBtn")
@@ -776,7 +776,7 @@ class ClientsPage(QWidget):
 
             title_layout = QHBoxLayout()
             title_icon = QLabel()
-            title_icon.setPixmap(QPixmap("icons/location.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            title_icon.setPixmap(QPixmap("frontend/icons/location.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             title_label = QLabel("Direcciones Utilizadas")
             title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
             title_layout.addWidget(title_icon)
@@ -819,7 +819,7 @@ class ClientsPage(QWidget):
 
             orders_title_layout = QHBoxLayout()
             orders_icon = QLabel()
-            orders_icon.setPixmap(QPixmap("icons/history.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            orders_icon.setPixmap(QPixmap("frontend/icons/history.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             orders_label = QLabel("Historial de Órdenes")
             orders_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
             orders_title_layout.addWidget(orders_icon)
@@ -859,7 +859,7 @@ class ClientsPage(QWidget):
             ph_layout.setAlignment(Qt.AlignCenter)
             
             icon = QLabel()
-            icon.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            icon.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             text = QLabel("Busca un cliente y selecciona uno para ver sus direcciones y órdenes.")
             text.setAlignment(Qt.AlignCenter)
             text.setStyleSheet("font-size: 15px; color: #555; font-weight: 500;")

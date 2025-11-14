@@ -9,9 +9,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QTextDocument, QTextCursor, QFont
-from utils import http_get
-from price.get_rates import convert_to_currency
-from urls import API_URL_ORDERS
+from frontend.utils import http_get
+from frontend.price.get_rates import convert_to_currency
+from frontend.urls import API_URL_ORDERS
 import re
 import qrcode
 from urllib.parse import quote
@@ -36,7 +36,7 @@ class VouchersTab(QWidget):
 
         icon_label = QLabel()
         icon_label.setPixmap(
-            QPixmap("icons/voucher.png").scaled(45, 45, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            QPixmap("frontend/icons/voucher.png").scaled(45, 45, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
         title_label = QLabel("Generar vales")
         title_label.setStyleSheet("""

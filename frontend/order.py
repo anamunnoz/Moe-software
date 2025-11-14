@@ -7,15 +7,15 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
 from datetime import date, datetime
-from utils import http_get, http_post, http_delete, http_put, make_icon_label
-from urls import (
+from frontend.utils import http_get, http_post, http_delete, http_put, make_icon_label
+from frontend.urls import (
     API_URL_ORDERS, API_URL_CLIENTES, API_URL_MENSAJERIAS, API_URL_BOOKS,
     API_URL_ADITIVOS, API_URL_REQUESTED_BOOKS, API_URL_REQUESTED_BOOK_ADDITIVES,
     API_URL_BOOK_ON_ORDER
 )
-from price.get_rates import convert_to_currency
-from price.price import calculate_price
-from price_service import PriceService
+from frontend.price.get_rates import convert_to_currency
+from frontend.price.price import calculate_price
+from frontend.price_service import PriceService
 import json
 import requests
 
@@ -96,7 +96,7 @@ class OrderWidget(QWidget):
         header_layout = QHBoxLayout()
         header_icon = QLabel()
         header_icon.setPixmap(
-            QPixmap("icons/orders.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            QPixmap("frontend/icons/orders.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
         header_title = QLabel("Órdenes")
         header_title.setStyleSheet("""
@@ -254,7 +254,7 @@ class OrderWidget(QWidget):
         self.add_client_input.setCompleter(self.client_completer)
         self.add_client_input.textChanged.connect(self._update_client_completer)
 
-        client_layout.addRow(make_icon_label("icons/client.png", "Cliente"), self.add_client_input)
+        client_layout.addRow(make_icon_label("frontend/icons/client.png", "Cliente"), self.add_client_input)
 
         # --- Zona / Municipio con autocompletado ---
         self.add_delivery_input = QLineEdit()
@@ -267,17 +267,17 @@ class OrderWidget(QWidget):
         # Conectar el cambio de texto para detectar cuando el usuario escribe
         self.add_delivery_input.textChanged.connect(self._on_delivery_text_changed)
 
-        client_layout.addRow(make_icon_label("icons/zone.png", "Municipio"), self.add_delivery_input)
+        client_layout.addRow(make_icon_label("frontend/icons/zone.png", "Municipio"), self.add_delivery_input)
 
         # Dirección
         self.add_address_input = QLineEdit()
         self.add_address_input.setPlaceholderText("Dirección exacta de entrega")
-        client_layout.addRow(make_icon_label("icons/description.png", "Dirección exacta"), self.add_address_input)
+        client_layout.addRow(make_icon_label("frontend/icons/description.png", "Dirección exacta"), self.add_address_input)
 
         # Método de pago
         self.add_payment_combo = QComboBox()
         self.add_payment_combo.addItems(["CUP", "USD", "EUR", "Zelle", "USDT", "Bitcoin"])
-        client_layout.addRow(make_icon_label("icons/card.png", "Método de pago"), self.add_payment_combo)
+        client_layout.addRow(make_icon_label("frontend/icons/card.png", "Método de pago"), self.add_payment_combo)
 
         main_layout.addWidget(client_group)
 
@@ -294,7 +294,7 @@ class OrderWidget(QWidget):
         self.book_completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.add_book_input.setCompleter(self.book_completer)
         books_layout.addRow = books_layout.addWidget
-        books_layout.addWidget(make_icon_label("icons/books.png", "Libros"))
+        books_layout.addWidget(make_icon_label("frontend/icons/books.png", "Libros"))
         books_layout.addWidget(self.add_book_input)
 
         # Cantidad de libros
@@ -304,7 +304,7 @@ class OrderWidget(QWidget):
         quantity_layout.setSpacing(8)
 
         quantity_icon = QLabel()
-        quantity_icon.setPixmap(QPixmap("icons/quantity.png").scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        quantity_icon.setPixmap(QPixmap("frontend/icons/quantity.png").scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         quantity_label = QLabel("Cantidad")
         quantity_label.setStyleSheet("font-weight: 500;")
 
@@ -333,7 +333,7 @@ class OrderWidget(QWidget):
         books_layout.addWidget(quantity_group)
 
         # Servicios extras
-        books_layout.addWidget(make_icon_label("icons/extra.png", "Servicios extras"))
+        books_layout.addWidget(make_icon_label("frontend/icons/extra.png", "Servicios extras"))
         self.select_services_btn = QPushButton("Seleccionar servicios extras")
         self.select_services_btn.setStyleSheet("""
             QPushButton {
@@ -363,7 +363,7 @@ class OrderWidget(QWidget):
         discount_label_layout.setSpacing(5)
 
         icon = QLabel()
-        pixmap = QPixmap("icons/discount.png").scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = QPixmap("frontend/icons/discount.png").scaled(24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon.setPixmap(pixmap)
 
         text_label = QLabel("Descuento")
@@ -443,11 +443,11 @@ class OrderWidget(QWidget):
         self.add_type_combo.addItems([self.add_type_combo])
     
         self.add_type_combo.currentIndexChanged.connect(self._update_delivery_date_add)
-        details_layout.addRow(make_icon_label("icons/tipo.png", "Tipo de pedido"), self.add_type_combo)
+        details_layout.addRow(make_icon_label("frontend/icons/tipo.png", "Tipo de pedido"), self.add_type_combo)
 
         # Costo de mensajería (solo lectura)
         self.delivery_price_label = QLabel("0.00 $")
-        details_layout.addRow(make_icon_label("icons/delivery.png", "Costo de mensajería"), self.delivery_price_label)
+        details_layout.addRow(make_icon_label("frontend/icons/delivery.png", "Costo de mensajería"), self.delivery_price_label)
 
         # Fecha de realizado
         self.add_order_date = QDateEdit()
@@ -455,7 +455,7 @@ class OrderWidget(QWidget):
         self.add_order_date.setCalendarPopup(True)
         self.add_order_date.setReadOnly(True)
         self.add_order_date.setButtonSymbols(QDateEdit.NoButtons)
-        details_layout.addRow(make_icon_label("icons/fecha1.png", "Fecha de realizado"), self.add_order_date)
+        details_layout.addRow(make_icon_label("frontend/icons/fecha1.png", "Fecha de realizado"), self.add_order_date)
 
         # Fecha aproximada de entrega 
         self.add_delivery_date = QDateEdit()
@@ -463,11 +463,11 @@ class OrderWidget(QWidget):
         self.add_delivery_date.setCalendarPopup(True)
         self.add_delivery_date.setReadOnly(True)
         self.add_delivery_date.setButtonSymbols(QDateEdit.NoButtons)
-        details_layout.addRow(make_icon_label("icons/fecha2.png", "Fecha aproximada de entrega"), self.add_delivery_date)
+        details_layout.addRow(make_icon_label("frontend/icons/fecha2.png", "Fecha aproximada de entrega"), self.add_delivery_date)
         
         # Precio total
         self.total_price_label = QLabel("0.00 $")
-        details_layout.addRow(make_icon_label("icons/price.png", "Total"), self.total_price_label)
+        details_layout.addRow(make_icon_label("frontend/icons/price.png", "Total"), self.total_price_label)
 
         # Pago adelantado
         self.add_payment_advance_edit = QLineEdit()
@@ -475,11 +475,11 @@ class OrderWidget(QWidget):
         self.add_payment_advance_edit.textChanged.connect(self._update_totals_add)
         self.add_payment_advance_edit.textEdited.connect(self._update_totals_add)
 
-        details_layout.addRow(make_icon_label("icons/money.png", "Pago adelantado"), self.add_payment_advance_edit)
+        details_layout.addRow(make_icon_label("frontend/icons/money.png", "Pago adelantado"), self.add_payment_advance_edit)
 
         # Pago pendiente
         self.add_outstanding_payment_label = QLabel("0.00 $")
-        details_layout.addRow(make_icon_label("icons/pending.png", "Pago pendiente"), self.add_outstanding_payment_label)
+        details_layout.addRow(make_icon_label("frontend/icons/pending.png", "Pago pendiente"), self.add_outstanding_payment_label)
 
         # Botón crear orden
         create_order_btn = QPushButton("Crear orden")
@@ -1158,58 +1158,58 @@ class OrderWidget(QWidget):
         self.client_name_label = QLabel("")
         self.client_phone_label = QLabel("")
         self.client_identity_label = QLabel("")
-        fixed_form.addRow(make_icon_label("icons/client.png", "Nombre:"), self.client_name_label)
-        fixed_form.addRow(make_icon_label("icons/identity.png", "Carnet de Identidad:"), self.client_identity_label)
-        fixed_form.addRow(make_icon_label("icons/phone.png", "Teléfono:"), self.client_phone_label)
+        fixed_form.addRow(make_icon_label("frontend/icons/client.png", "Nombre:"), self.client_name_label)
+        fixed_form.addRow(make_icon_label("frontend/icons/identity.png", "Carnet de Identidad:"), self.client_identity_label)
+        fixed_form.addRow(make_icon_label("frontend/icons/phone.png", "Teléfono:"), self.client_phone_label)
 
         # --- DIRECCIÓN ACTUAL ---
         self.modify_order_address_current = QLineEdit()
         self.modify_order_address_current.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/description.png", "Dirección exacta actual:"), self.modify_order_address_current)
+        fixed_form.addRow(make_icon_label("frontend/icons/description.png", "Dirección exacta actual:"), self.modify_order_address_current)
 
         # --- MUNICIPIO ACTUAL ---
         self.modify_delivery_current = QLineEdit()
         self.modify_delivery_current.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/zone.png", "Municipio actual:"), self.modify_delivery_current)
+        fixed_form.addRow(make_icon_label("frontend/icons/zone.png", "Municipio actual:"), self.modify_delivery_current)
 
         # --- MÉTODO DE PAGO ACTUAL ---
         self.modify_payment_method_current = QLineEdit()
         self.modify_payment_method_current.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/card.png", "Método de pago actual:"), self.modify_payment_method_current)
+        fixed_form.addRow(make_icon_label("frontend/icons/card.png", "Método de pago actual:"), self.modify_payment_method_current)
 
         # --- TIPO DE PEDIDO ACTUAL ---
         self.modify_order_type_current = QLineEdit()
         self.modify_order_type_current.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/tipo.png", "Tipo de pedido actual:"), self.modify_order_type_current)
+        fixed_form.addRow(make_icon_label("frontend/icons/tipo.png", "Tipo de pedido actual:"), self.modify_order_type_current)
 
         # --- COSTO DE MENSAJERÍA ---
         self.modify_delivery_price = QLineEdit()
         self.modify_delivery_price.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/delivery.png", "Costo de mensajería:"), self.modify_delivery_price)
+        fixed_form.addRow(make_icon_label("frontend/icons/delivery.png", "Costo de mensajería:"), self.modify_delivery_price)
 
         # --- FECHAS ---
         self.modify_order_date = QLineEdit()
         self.modify_order_date.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/fecha1.png", "Fecha de realizado:"), self.modify_order_date)
+        fixed_form.addRow(make_icon_label("frontend/icons/fecha1.png", "Fecha de realizado:"), self.modify_order_date)
 
         self.modify_delivery_date = QLineEdit()
         self.modify_delivery_date.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/fecha2.png", "Fecha de entrega:"), self.modify_delivery_date)
+        fixed_form.addRow(make_icon_label("frontend/icons/fecha2.png", "Fecha de entrega:"), self.modify_delivery_date)
 
         # --- TOTAL ---
         self.modify_total_price = QLineEdit()
         self.modify_total_price.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/price.png", "Total:"), self.modify_total_price)
+        fixed_form.addRow(make_icon_label("frontend/icons/price.png", "Total:"), self.modify_total_price)
 
         # --- PAGO ADELANTADO ACTUAL ---
         self.modify_payment_advance_current = QLineEdit()
         self.modify_payment_advance_current.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/money.png", "Pago adelantado actual:"), self.modify_payment_advance_current)
+        fixed_form.addRow(make_icon_label("frontend/icons/money.png", "Pago adelantado actual:"), self.modify_payment_advance_current)
 
         # --- PAGO PENDIENTE ---
         self.modify_outstanding_payment = QLineEdit()
         self.modify_outstanding_payment.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("icons/pending.png", "Pago pendiente:"), self.modify_outstanding_payment)
+        fixed_form.addRow(make_icon_label("frontend/icons/pending.png", "Pago pendiente:"), self.modify_outstanding_payment)
 
         # --- ESTADO DE LA ORDEN ---
         status_widget = QWidget()
@@ -1226,7 +1226,7 @@ class OrderWidget(QWidget):
         status_layout.addWidget(self.modify_order_status_text)
         status_layout.addStretch()
 
-        fixed_form.addRow(make_icon_label("icons/status.png", "Estado de la orden:"), status_widget)
+        fixed_form.addRow(make_icon_label("frontend/icons/status.png", "Estado de la orden:"), status_widget)
 
         main_layout.addWidget(fixed_data_group)
 
@@ -1264,27 +1264,27 @@ class OrderWidget(QWidget):
         # --- NUEVO MÉTODO DE PAGO ---
         self.modify_payment_method_new = QComboBox()
         self.modify_payment_method_new.addItems(["CUP", "USD", "EUR", "Zelle", "USDT", "Bitcoin"])
-        variable_form.addRow(make_icon_label("icons/card.png", "Nuevo método de pago:"), self.modify_payment_method_new)
+        variable_form.addRow(make_icon_label("frontend/icons/card.png", "Nuevo método de pago:"), self.modify_payment_method_new)
 
         # --- NUEVO TIPO DE PEDIDO ---
         self.modify_order_type_new = QComboBox()
-        variable_form.addRow(make_icon_label("icons/tipo.png", "Nuevo tipo de pedido:"), self.modify_order_type_new)
+        variable_form.addRow(make_icon_label("frontend/icons/tipo.png", "Nuevo tipo de pedido:"), self.modify_order_type_new)
 
         # --- NUEVA DIRECCIÓN ---
         self.modify_order_address_new = QLineEdit()
         self.modify_order_address_new.setPlaceholderText("Nueva dirección exacta...")
-        variable_form.addRow(make_icon_label("icons/description.png", "Nueva dirección:"), self.modify_order_address_new)
+        variable_form.addRow(make_icon_label("frontend/icons/description.png", "Nueva dirección:"), self.modify_order_address_new)
 
         # --- NUEVO MUNICIPIO ---
         self.modify_delivery_new = QComboBox()
         self.modify_delivery_new.currentIndexChanged.connect(self._on_delivery_changed)
-        variable_form.addRow(make_icon_label("icons/zone.png", "Nuevo municipio:"), self.modify_delivery_new)
+        variable_form.addRow(make_icon_label("frontend/icons/zone.png", "Nuevo municipio:"), self.modify_delivery_new)
 
         # --- NUEVO PAGO ADELANTADO ---
         self.modify_payment_advance_new = QSpinBox()
         self.modify_payment_advance_new.setRange(0, 100000)
         self.modify_payment_advance_new.valueChanged.connect(self._update_modify_totals)
-        variable_form.addRow(make_icon_label("icons/money.png", "Nuevo pago adelantado:"), self.modify_payment_advance_new)
+        variable_form.addRow(make_icon_label("frontend/icons/money.png", "Nuevo pago adelantado:"), self.modify_payment_advance_new)
 
         main_layout.addWidget(variable_data_group)
 
@@ -1316,9 +1316,9 @@ class OrderWidget(QWidget):
                 item.setData(Qt.UserRole, order["idOrder"])
                 
                 if order.get("done", False):
-                    item.setIcon(QIcon("icons/check.png"))  
+                    item.setIcon(QIcon("frontend/icons/check.png"))  
                 else:
-                    item.setIcon(QIcon("icons/pendiente.png")) 
+                    item.setIcon(QIcon("frontend/icons/pendiente.png")) 
                     
                 self.modify_order_list.addItem(item)
                 return
@@ -1345,9 +1345,9 @@ class OrderWidget(QWidget):
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
                 if order.get("done", False):
-                    item.setIcon(QIcon("icons/check.png"))  
+                    item.setIcon(QIcon("frontend/icons/check.png"))  
                 else:
-                    item.setIcon(QIcon("icons/pendiente.png"))
+                    item.setIcon(QIcon("frontend/icons/pendiente.png"))
                     
                 results.append(item)
         if results:
@@ -1384,14 +1384,14 @@ class OrderWidget(QWidget):
             is_done = data.get("done", False)
             if is_done:
                 self._set_modify_form_enabled(False)
-                self.modify_order_status_icon.setPixmap(QPixmap("icons/check.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                self.modify_order_status_icon.setPixmap(QPixmap("frontend/icons/check.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
                 self.modify_order_status_text.setText("COMPLETADA")
                 self.modify_order_status_text.setStyleSheet("font-size: 14px; font-weight: 500; color: #27ae60;")
                 QMessageBox.information(self, "Orden completada", 
                                       "Esta orden ya está marcada como completada y no puede ser modificada.")
             else:
                 self._set_modify_form_enabled(True)
-                self.modify_order_status_icon.setPixmap(QPixmap("icons/pendiente.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                self.modify_order_status_icon.setPixmap(QPixmap("frontend/icons/pendiente.png").scaled(20, 20, Qt.KeepAspectRatio, Qt.SmoothTransformation))
                 self.modify_order_status_text.setText("PENDIENTE")
                 self.modify_order_status_text.setStyleSheet("font-size: 14px; font-weight: 500; color: #F4320B;")
 
@@ -1842,27 +1842,27 @@ class OrderWidget(QWidget):
         self.delete_client_name = QLabel("")
         self.delete_client_identity = QLabel("")
         self.delete_client_phone = QLabel("")
-        basic_form.addRow(make_icon_label("icons/client.png", "Nombre:"), self.delete_client_name)
-        basic_form.addRow(make_icon_label("icons/identity.png", "Carnet:"), self.delete_client_identity)
-        basic_form.addRow(make_icon_label("icons/phone.png", "Teléfono:"), self.delete_client_phone)
+        basic_form.addRow(make_icon_label("frontend/icons/client.png", "Nombre:"), self.delete_client_name)
+        basic_form.addRow(make_icon_label("frontend/icons/identity.png", "Carnet:"), self.delete_client_identity)
+        basic_form.addRow(make_icon_label("frontend/icons/phone.png", "Teléfono:"), self.delete_client_phone)
 
         # Dirección y municipio
         self.delete_order_address = QLabel("")
         self.delete_delivery_zone = QLabel("")
-        basic_form.addRow(make_icon_label("icons/description.png", "Dirección:"), self.delete_order_address)
-        basic_form.addRow(make_icon_label("icons/zone.png", "Municipio:"), self.delete_delivery_zone)
+        basic_form.addRow(make_icon_label("frontend/icons/description.png", "Dirección:"), self.delete_order_address)
+        basic_form.addRow(make_icon_label("frontend/icons/zone.png", "Municipio:"), self.delete_delivery_zone)
 
         # Fechas
         self.delete_order_date = QLabel("")
         self.delete_delivery_date = QLabel("")
-        basic_form.addRow(make_icon_label("icons/fecha1.png", "Fecha de pedido:"), self.delete_order_date)
-        basic_form.addRow(make_icon_label("icons/fecha2.png", "Fecha de entrega:"), self.delete_delivery_date)
+        basic_form.addRow(make_icon_label("frontend/icons/fecha1.png", "Fecha de pedido:"), self.delete_order_date)
+        basic_form.addRow(make_icon_label("frontend/icons/fecha2.png", "Fecha de entrega:"), self.delete_delivery_date)
 
         # Método de pago y tipo
         self.delete_payment_method = QLabel("")
         self.delete_order_type = QLabel("")
-        basic_form.addRow(make_icon_label("icons/card.png", "Método de pago:"), self.delete_payment_method)
-        basic_form.addRow(make_icon_label("icons/tipo.png", "Tipo de pedido:"), self.delete_order_type)
+        basic_form.addRow(make_icon_label("frontend/icons/card.png", "Método de pago:"), self.delete_payment_method)
+        basic_form.addRow(make_icon_label("frontend/icons/tipo.png", "Tipo de pedido:"), self.delete_order_type)
 
         details_layout.addWidget(basic_info_group)
 
@@ -1886,10 +1886,10 @@ class OrderWidget(QWidget):
         self.delete_outstanding_payment = QLabel("")
         self.delete_delivery_price = QLabel("")
 
-        financial_form.addRow(make_icon_label("icons/price.png", "Total:"), self.delete_total_price)
-        financial_form.addRow(make_icon_label("icons/money.png", "Pago adelantado:"), self.delete_payment_advance)
-        financial_form.addRow(make_icon_label("icons/pending.png", "Pago pendiente:"), self.delete_outstanding_payment)
-        financial_form.addRow(make_icon_label("icons/delivery.png", "Costo mensajería:"), self.delete_delivery_price)
+        financial_form.addRow(make_icon_label("frontend/icons/price.png", "Total:"), self.delete_total_price)
+        financial_form.addRow(make_icon_label("frontend/icons/money.png", "Pago adelantado:"), self.delete_payment_advance)
+        financial_form.addRow(make_icon_label("frontend/icons/pending.png", "Pago pendiente:"), self.delete_outstanding_payment)
+        financial_form.addRow(make_icon_label("frontend/icons/delivery.png", "Costo mensajería:"), self.delete_delivery_price)
 
         details_layout.addWidget(financial_group)
 
@@ -1984,9 +1984,9 @@ class OrderWidget(QWidget):
                 item.setData(Qt.UserRole, order["idOrder"])
 
                 if order.get("done", False):
-                    item.setIcon(QIcon("icons/check.png"))  
+                    item.setIcon(QIcon("frontend/icons/check.png"))  
                 else:
-                    item.setIcon(QIcon("icons/pendiente.png"))
+                    item.setIcon(QIcon("frontend/icons/pendiente.png"))
 
                 self.delete_order_list.addItem(item)
                 return
@@ -2013,9 +2013,9 @@ class OrderWidget(QWidget):
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
                 if order.get("done", False):
-                    item.setIcon(QIcon("icons/check.png"))  
+                    item.setIcon(QIcon("frontend/icons/check.png"))  
                 else:
-                    item.setIcon(QIcon("icons/pendiente.png"))
+                    item.setIcon(QIcon("frontend/icons/pendiente.png"))
                 results.append(item)
 
         if results:

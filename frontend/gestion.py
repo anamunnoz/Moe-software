@@ -6,9 +6,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from urls import API_URL_ADITIVOS, API_URL_MENSAJERIAS
-from utils import http_get, http_post, http_patch, http_delete, make_icon_label
-from price.get_rates import convert_to_currency
+from frontend.urls import API_URL_ADITIVOS, API_URL_MENSAJERIAS
+from frontend.utils import http_get, http_post, http_patch, http_delete, make_icon_label
+from frontend.price.get_rates import convert_to_currency
 
 
 class GestionPage(QWidget):
@@ -25,7 +25,7 @@ class GestionPage(QWidget):
 
         header = QHBoxLayout()
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/gestion2.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/gestion2.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title = QLabel("Gestión ▸ Aditivos y Mensajerías")
         title.setStyleSheet("font-size: 35px; font-weight: 700; color: #222;")
         header.addWidget(icon)
@@ -86,8 +86,8 @@ class GestionPage(QWidget):
 
         self.add_nombre.returnPressed.connect(self._add_aditivo)
 
-        inner_form.addRow(make_icon_label("icons/additive.png", "Nombre del aditivo"), self.add_nombre)
-        inner_form.addRow(make_icon_label("icons/price.png", "Precio"), self.add_precio)
+        inner_form.addRow(make_icon_label("frontend/icons/additive.png", "Nombre del aditivo"), self.add_nombre)
+        inner_form.addRow(make_icon_label("frontend/icons/price.png", "Precio"), self.add_precio)
 
         form_layout.addWidget(form_card)
 
@@ -197,8 +197,8 @@ class GestionPage(QWidget):
         self.edit_precio.setDecimals(2)
         self.edit_precio.setSingleStep(5)
 
-        form_layout.addRow(make_icon_label("icons/additive.png", "Nombre del aditivo"), self.edit_nombre)
-        form_layout.addRow(make_icon_label("icons/price.png", "Precio"), self.edit_precio)
+        form_layout.addRow(make_icon_label("frontend/icons/additive.png", "Nombre del aditivo"), self.edit_nombre)
+        form_layout.addRow(make_icon_label("frontend/icons/price.png", "Precio"), self.edit_precio)
 
         self.btn_update_aditivo = QPushButton("Aplicar cambios")
         self.btn_update_aditivo.setObjectName("primaryBtn")
@@ -443,8 +443,8 @@ class GestionPage(QWidget):
             layout.addStretch()
             return w
 
-        form.addRow(make_icon_line("icons/additive.png", f"Nombre: {aditivo['name']}"))
-        form.addRow(make_icon_line("icons/price.png", f"Precio: ${aditivo['price']}"))
+        form.addRow(make_icon_line("frontend/icons/additive.png", f"Nombre: {aditivo['name']}"))
+        form.addRow(make_icon_line("frontend/icons/price.png", f"Precio: ${aditivo['price']}"))
 
         self.delete_info_layout.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -462,7 +462,7 @@ class GestionPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_pix = QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        icon_pix = QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(icon_pix)
         icon_label.setAlignment(Qt.AlignCenter)
 
@@ -555,7 +555,7 @@ class GestionPage(QWidget):
         ph_layout = QVBoxLayout(self.view_placeholder_aditivo)
         ph_layout.setAlignment(Qt.AlignCenter)
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         text = QLabel("Busca un aditivo y selecciona uno para ver sus detalles.")
         text.setAlignment(Qt.AlignCenter)
         text.setStyleSheet("font-size: 15px; color: #555; font-weight: 500;")
@@ -668,8 +668,8 @@ class GestionPage(QWidget):
             layout.addStretch()
             return w
 
-        form.addRow(make_icon_line("icons/additive.png", f"Nombre: {aditivo['name']}"))
-        form.addRow(make_icon_line("icons/price.png", f"Precio: ${aditivo['price']}"))
+        form.addRow(make_icon_line("frontend/icons/additive.png", f"Nombre: {aditivo['name']}"))
+        form.addRow(make_icon_line("frontend/icons/price.png", f"Precio: ${aditivo['price']}"))
 
         self.view_info_layout_aditivo.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -687,7 +687,7 @@ class GestionPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         text = QLabel("Busca un aditivo y selecciona uno para ver sus detalles.")
         text.setAlignment(Qt.AlignCenter)
         text.setStyleSheet("font-size: 15px; color: #555; font-weight: 500;")
@@ -788,9 +788,9 @@ class GestionPage(QWidget):
         self.add_zona.returnPressed.connect(self._add_mensajeria)
         self.add_descripcion.returnPressed.connect(self._add_mensajeria)
 
-        inner_form.addRow(make_icon_label("icons/zone.png", "Zona"), self.add_zona)
-        inner_form.addRow(make_icon_label("icons/description.png", "Descripción"), self.add_descripcion)
-        inner_form.addRow(make_icon_label("icons/price.png", "Precio"), self.add_precio_m)
+        inner_form.addRow(make_icon_label("frontend/icons/zone.png", "Zona"), self.add_zona)
+        inner_form.addRow(make_icon_label("frontend/icons/description.png", "Descripción"), self.add_descripcion)
+        inner_form.addRow(make_icon_label("frontend/icons/price.png", "Precio"), self.add_precio_m)
 
         form_layout.addWidget(form_card)
 
@@ -907,9 +907,9 @@ class GestionPage(QWidget):
         self.edit_precio_m.setDecimals(2) 
         self.edit_precio_m.setSingleStep(5)
 
-        form_layout.addRow(make_icon_label("icons/zone.png", "Zona"), self.edit_zona_m)
-        form_layout.addRow(make_icon_label("icons/description.png", "Descripción"), self.edit_descripcion_m)
-        form_layout.addRow(make_icon_label("icons/price.png", "Precio"), self.edit_precio_m)
+        form_layout.addRow(make_icon_label("frontend/icons/zone.png", "Zona"), self.edit_zona_m)
+        form_layout.addRow(make_icon_label("frontend/icons/description.png", "Descripción"), self.edit_descripcion_m)
+        form_layout.addRow(make_icon_label("frontend/icons/price.png", "Precio"), self.edit_precio_m)
 
         self.btn_update_mensajeria = QPushButton("Actualizar mensajería")
         self.btn_update_mensajeria.setObjectName("primaryBtn")
@@ -1153,9 +1153,9 @@ class GestionPage(QWidget):
             layout.addStretch()
             return w
 
-        form.addRow(make_icon_line("icons/zone.png", f"Zona: {mensajeria['zone']}"))  # CAMBIO AQUÍ
-        form.addRow(make_icon_line("icons/description.png", f"Descripción: {mensajeria['description']}"))  # CAMBIO AQUÍ
-        form.addRow(make_icon_line("icons/price.png", f"Precio: ${mensajeria['price']}"))  # CAMBIO AQUÍ
+        form.addRow(make_icon_line("frontend/icons/zone.png", f"Zona: {mensajeria['zone']}"))  # CAMBIO AQUÍ
+        form.addRow(make_icon_line("frontend/icons/description.png", f"Descripción: {mensajeria['description']}"))  # CAMBIO AQUÍ
+        form.addRow(make_icon_line("frontend/icons/price.png", f"Precio: ${mensajeria['price']}"))  # CAMBIO AQUÍ
 
         self.delete_info_layout_m.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -1174,7 +1174,7 @@ class GestionPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_label.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon_label.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         icon_label.setAlignment(Qt.AlignCenter)
 
         text_label = QLabel("Seleccione una mensajería para ver los detalles.")
@@ -1344,9 +1344,9 @@ class GestionPage(QWidget):
             layout.addStretch()
             return w
 
-        form.addRow(make_icon_line("icons/zone.png", f"Zona: {mensajeria['zone']}"))
-        form.addRow(make_icon_line("icons/description.png", f"Descripción: {mensajeria['description']}"))
-        form.addRow(make_icon_line("icons/price.png", f"Precio: ${mensajeria['price']}"))
+        form.addRow(make_icon_line("frontend/icons/zone.png", f"Zona: {mensajeria['zone']}"))
+        form.addRow(make_icon_line("frontend/icons/description.png", f"Descripción: {mensajeria['description']}"))
+        form.addRow(make_icon_line("frontend/icons/price.png", f"Precio: ${mensajeria['price']}"))
 
         self.info_layout_list_m.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -1365,7 +1365,7 @@ class GestionPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_label.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon_label.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         icon_label.setAlignment(Qt.AlignCenter)
 
         text_label = QLabel("Seleccione una mensajería para ver los detalles.")

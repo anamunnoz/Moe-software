@@ -9,8 +9,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QPixmap
-from utils import http_get, http_put
-from urls import API_URL_ORDERS
+from frontend.utils import http_get, http_put
+from frontend.urls import API_URL_ORDERS
 from datetime import datetime
 
 
@@ -424,7 +424,7 @@ class ExcelTab(QWidget):
         #? ---------------- ENCABEZADO ----------------
         header_layout = QHBoxLayout()
         header_icon = QLabel()
-        header_icon.setPixmap(QPixmap("icons/table.png").scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        header_icon.setPixmap(QPixmap("frontend/icons/table.png").scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         
         header_title = QLabel("Generar Reporte Excel")
         header_title.setStyleSheet("""
@@ -459,7 +459,7 @@ class ExcelTab(QWidget):
         semana_layout.setAlignment(Qt.AlignLeft)
 
         semana_icon = QLabel()
-        semana_icon.setPixmap(QPixmap("icons/week.png").scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        semana_icon.setPixmap(QPixmap("frontend/icons/week.png").scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         
         semana_label = QLabel("Seleccionar semana:")
         semana_label.setStyleSheet("font-size: 15px; color: #2c3e50; font-weight: 600;")
@@ -488,7 +488,7 @@ class ExcelTab(QWidget):
                 border: none;
             }
             QComboBox::down-arrow {
-                image: url(icons/arrow.png);
+                image: url(frontend/icons/arrow.png);
                 width: 12px;
                 height: 12px;
             }
@@ -513,7 +513,7 @@ class ExcelTab(QWidget):
         modo_layout.setAlignment(Qt.AlignLeft)
 
         excel_icon = QLabel()
-        excel_icon.setPixmap(QPixmap("icons/month.png").scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        excel_icon.setPixmap(QPixmap("frontend/icons/month.png").scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         excel_text = QLabel("Modo Excel:")
         excel_text.setStyleSheet("font-size: 15px; color: #2c3e50; font-weight: 600;")
         self.radio_continuar = QRadioButton("Continuar existente")

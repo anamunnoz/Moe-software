@@ -5,17 +5,17 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
 from PySide6.QtGui import QIcon, QColor, QFont
 import sys
-from books import BooksPage
-from client import ClientsPage
-from gestion import GestionPage
-from consultas import ConsultasPage
-from order import OrderWidget
-from production import ProductionStatusTab
-from vouchers import VouchersTab
-from generate_excel import ExcelTab
-from birthday import BirthdayTab
-from stats_card import DashboardWidget
-from production_costs import ProductionCostsPage
+from frontend.books import BooksPage
+from frontend.client import ClientsPage
+from frontend.gestion import GestionPage
+from frontend.consultas import ConsultasPage
+from frontend.order import OrderWidget
+from frontend.production import ProductionStatusTab
+from frontend.vouchers import VouchersTab
+from frontend.generate_excel import ExcelTab
+from frontend.birthday import BirthdayTab
+from frontend.stats_card import DashboardWidget
+from frontend.production_costs import ProductionCostsPage
 
 class SidebarButton(QPushButton):
     def __init__(self, icon_path, text, parent=None):
@@ -89,16 +89,16 @@ class Sidebar(QWidget):
         header_layout.addStretch()
         layout.addWidget(header)
 
-        self.btn_books = SidebarButton("icons/books.png", "Libros")
-        self.btn_precio = SidebarButton("icons/price.png", "Precio")
-        self.btn_clientes = SidebarButton("icons/client.png", "Clientes")
-        self.btn_gestion = SidebarButton("icons/gestion.png", "Mensajería y aditivos")
-        self.btn_ordenes = SidebarButton("icons/order.png", "Órdenes")
-        self.btn_production = SidebarButton("icons/selected_book.png", "Estado de producción")
-        self.btn_vauchers = SidebarButton("icons/tickets.png", "Generar vales")
-        self.btn_excel = SidebarButton("icons/xls.png", "Generar excel")
-        self.btn_birthday = SidebarButton("icons/cake.png", "Cumpleaños de clientes")
-        self.btn_production_costs = SidebarButton("icons/printer.png", "Costos de producción")
+        self.btn_books = SidebarButton("frontend/icons/books.png", "Libros")
+        self.btn_precio = SidebarButton("frontend/icons/price.png", "Precio")
+        self.btn_clientes = SidebarButton("frontend/icons/client.png", "Clientes")
+        self.btn_gestion = SidebarButton("frontend/icons/gestion.png", "Mensajería y aditivos")
+        self.btn_ordenes = SidebarButton("frontend/icons/order.png", "Órdenes")
+        self.btn_production = SidebarButton("frontend/icons/selected_book.png", "Estado de producción")
+        self.btn_vauchers = SidebarButton("frontend/icons/tickets.png", "Generar vales")
+        self.btn_excel = SidebarButton("frontend/icons/xls.png", "Generar excel")
+        self.btn_birthday = SidebarButton("frontend/icons/cake.png", "Cumpleaños de clientes")
+        self.btn_production_costs = SidebarButton("frontend/icons/printer.png", "Costos de producción")
 
         layout.addWidget(self.btn_precio)
         layout.addWidget(self.btn_ordenes)
@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
         self.sidebar.btn_production_costs.clicked.connect(lambda: self.stack.setCurrentWidget(self.production_costs_page))
 
 
-        self.sidebar.btn_home = SidebarButton("icons/home.png", "Inicio")
+        self.sidebar.btn_home = SidebarButton("frontend/icons/home.png", "Inicio")
         self.sidebar.layout().insertWidget(1, self.sidebar.btn_home)  # Después del header
         self.sidebar.btn_home.clicked.connect(lambda: self.stack.setCurrentWidget(self.dashboard_page))
 
@@ -228,8 +228,11 @@ class MainWindow(QMainWindow):
 
 
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()

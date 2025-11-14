@@ -5,7 +5,7 @@ from PySide6.QtGui import QPixmap, QPen, QColor, QPainter
 from PySide6.QtCore import Qt, QDateTime
 from datetime import datetime
 import requests
-from urls import API_URL_DASHBOARD
+from frontend.urls import API_URL_DASHBOARD
 
 class StatCard(QFrame):
     def __init__(self, title, value, icon_path, color="#3498db"):
@@ -135,11 +135,11 @@ class DashboardWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(20)
 
-        self.orders_card = StatCard("Total pedidos", "0", "icons/orders.png", "#e74c3c")
-        self.clients_card = StatCard("Total clientes", "0", "icons/client.png", "#3498db")
-        self.month_orders_card = StatCard("Pedidos este mes", "0", "icons/calendar.png", "#27ae60")
-        self.books_ordered_card = StatCard("Libros pedidos", "0", "icons/bookcount.png", "#f39c12")
-        self.month_income_card = StatCard("Ingresos del mes", "$0", "icons/price.png", "#16a085")
+        self.orders_card = StatCard("Total pedidos", "0", "frontend/icons/orders.png", "#e74c3c")
+        self.clients_card = StatCard("Total clientes", "0", "frontend/icons/client.png", "#3498db")
+        self.month_orders_card = StatCard("Pedidos este mes", "0", "frontend/icons/calendar.png", "#27ae60")
+        self.books_ordered_card = StatCard("Libros pedidos", "0", "frontend/icons/bookcount.png", "#f39c12")
+        self.month_income_card = StatCard("Ingresos del mes", "$0", "frontend/icons/price.png", "#16a085")
 
         layout.addStretch()
         layout.addWidget(self.orders_card)
@@ -181,7 +181,7 @@ class DashboardWidget(QWidget):
         title_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         icon_label = QLabel()
-        pixmap = QPixmap("icons/diagram.png").scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = QPixmap("frontend/icons/diagram.png").scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(pixmap)
         icon_label.setAlignment(Qt.AlignTop)
 
@@ -233,7 +233,7 @@ class DashboardWidget(QWidget):
         title_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         icon_label = QLabel()
-        pixmap = QPixmap("icons/trophy.png").scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = QPixmap("frontend/icons/trophy.png").scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(pixmap)
         icon_label.setAlignment(Qt.AlignTop)
 

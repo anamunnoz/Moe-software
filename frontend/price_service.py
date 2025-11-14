@@ -1,4 +1,4 @@
-from price.price import calculate_price
+from frontend.price.price import calculate_price
 import json
 
 class PriceService:

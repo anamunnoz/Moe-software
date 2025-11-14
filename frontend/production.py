@@ -7,8 +7,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QPixmap, QIcon
 
-from utils import http_get, http_put, make_icon_label
-from urls import API_URL_ORDERS, API_URL_BOOK_ON_ORDER, API_URL_REQUESTED_BOOK_ADDITIVES
+from frontend.utils import http_get, http_put, make_icon_label
+from frontend.urls import API_URL_ORDERS, API_URL_BOOK_ON_ORDER, API_URL_REQUESTED_BOOK_ADDITIVES
 
 class ProductionStatusTab(QWidget):
     def __init__(self, parent=None):
@@ -42,7 +42,7 @@ class ProductionStatusTab(QWidget):
         header_layout = QHBoxLayout()
         header_icon = QLabel()
         header_icon.setPixmap(
-            QPixmap("icons/production.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            QPixmap("frontend/icons/production.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
         header_title = QLabel("Estado de Producción")
         header_title.setStyleSheet("""
@@ -139,7 +139,7 @@ class ProductionStatusTab(QWidget):
         #? ---------------- BOTÓN GUARDAR ----------------
         self.save_production_btn = QPushButton("Guardar estados")
         self.save_production_btn.setObjectName("primaryBtn")
-        self.save_production_btn.setIcon(QPixmap("icons/save.png"))
+        self.save_production_btn.setIcon(QPixmap("frontend/icons/save.png"))
         self.save_production_btn.setEnabled(False)
         self.save_production_btn.clicked.connect(self._save_production_status)
         container_layout.addWidget(self.save_production_btn, alignment=Qt.AlignCenter)
@@ -165,9 +165,9 @@ class ProductionStatusTab(QWidget):
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
                 if order.get("done", False):
-                    item.setIcon(QIcon("icons/check.png"))  
+                    item.setIcon(QIcon("frontend/icons/check.png"))  
                 else:
-                    item.setIcon(QIcon("icons/pendiente.png"))
+                    item.setIcon(QIcon("frontend/icons/pendiente.png"))
                 self.production_order_list.addItem(item)
                 return
 
@@ -193,9 +193,9 @@ class ProductionStatusTab(QWidget):
                 item = QListWidgetItem(item_text)
                 item.setData(Qt.UserRole, order["idOrder"])
                 if order.get("done", False):
-                    item.setIcon(QIcon("icons/check.png"))  
+                    item.setIcon(QIcon("frontend/icons/check.png"))  
                 else:
-                    item.setIcon(QIcon("icons/pendiente.png"))
+                    item.setIcon(QIcon("frontend/icons/pendiente.png"))
                 results.append(item)
 
         if results:

@@ -4,8 +4,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QCursor
-from utils import http_get
-from urls import API_URL_CLIENTES
+from frontend.utils import http_get
+from frontend.urls import API_URL_CLIENTES
 from datetime import datetime, timedelta
 
 
@@ -26,7 +26,7 @@ class BirthdayTab(QWidget):
 
         header_icon = QLabel()
         header_icon.setPixmap(
-            QPixmap("icons/birthday.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            QPixmap("frontend/icons/birthday.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
         header_title = QLabel("Cumpleaños del Próximo Mes")
         header_title.setStyleSheet("""
@@ -171,7 +171,7 @@ class BirthdayTab(QWidget):
         birthday_row = QHBoxLayout()
         birthday_row.setSpacing(10)
         birthday_icon = QLabel()
-        birthday_icon.setPixmap(QPixmap("icons/upcoming.png").scaled(21, 21, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        birthday_icon.setPixmap(QPixmap("frontend/icons/upcoming.png").scaled(21, 21, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
         identity = client.get('identity', '')
         birthday_text = "—"
@@ -197,7 +197,7 @@ class BirthdayTab(QWidget):
         phone_row = QHBoxLayout()
         phone_row.setSpacing(10)
         phone_icon = QLabel()
-        phone_icon.setPixmap(QPixmap("icons/call.png").scaled(21, 21, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        phone_icon.setPixmap(QPixmap("frontend/icons/call.png").scaled(21, 21, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
         phone = client.get('phone_number', '—')
         phone_label = QLabel(phone)

@@ -6,8 +6,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from urls import API_URL_PRODUCTION_COSTS
-from utils import http_get, http_post, http_patch, http_delete, make_icon_label
+from frontend.urls import API_URL_PRODUCTION_COSTS
+from frontend.utils import http_get, http_post, http_patch, http_delete, make_icon_label
 
 class ProductResultItem(QWidget):
     def __init__(self, product, parent=None):
@@ -65,7 +65,7 @@ class ProductionCostsPage(QWidget):
 
         header = QHBoxLayout()
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/production_costs.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/production_costs.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title = QLabel("Costos de Producción")
         title.setStyleSheet("font-size: 35px; font-weight: 700; color: #222;")
         header.addWidget(icon)
@@ -98,8 +98,8 @@ class ProductionCostsPage(QWidget):
         self.add_product_price.setDecimals(2)
         self.add_product_price.setSingleStep(10)
 
-        form.addRow(make_icon_label("icons/paper.png", "Producto"), self.add_product)
-        form.addRow(make_icon_label("icons/budget.png", "Precio de producción"), self.add_product_price)
+        form.addRow(make_icon_label("frontend/icons/paper.png", "Producto"), self.add_product)
+        form.addRow(make_icon_label("frontend/icons/budget.png", "Precio de producción"), self.add_product_price)
         layout.addWidget(form_card)
 
         btn = QPushButton("Añadir costo de producción")
@@ -167,8 +167,8 @@ class ProductionCostsPage(QWidget):
         self.edit_product_price.setDecimals(2)
         self.edit_product_price.setSingleStep(10)
 
-        form_layout.addRow(make_icon_label("icons/paper.png", "Producto"), self.edit_product_name)
-        form_layout.addRow(make_icon_label("icons/budget.png", "Precio de producción"), self.edit_product_price)
+        form_layout.addRow(make_icon_label("frontend/icons/paper.png", "Producto"), self.edit_product_name)
+        form_layout.addRow(make_icon_label("frontend/icons/budget.png", "Precio de producción"), self.edit_product_price)
 
         self.btn_update = QPushButton("Guardar cambios")
         self.btn_update.setObjectName("primaryBtn")
@@ -281,7 +281,7 @@ class ProductionCostsPage(QWidget):
         delete_info_main_layout.setAlignment(Qt.AlignRight)  
 
         name_layout = QHBoxLayout()
-        name_icon_label = make_icon_label("icons/paper.png", "Producto:")
+        name_icon_label = make_icon_label("frontend/icons/paper.png", "Producto:")
         self.delete_product_name = QLabel("")
         self.delete_product_name.setStyleSheet("color: #555;")
         name_layout.addWidget(name_icon_label)
@@ -289,7 +289,7 @@ class ProductionCostsPage(QWidget):
         name_layout.addStretch()
 
         price_layout = QHBoxLayout()
-        price_icon_label = make_icon_label("icons/budget.png", "Precio:")
+        price_icon_label = make_icon_label("frontend/icons/budget.png", "Precio:")
         self.delete_product_price = QLabel("")
         self.delete_product_price.setStyleSheet("color: #555;")
         price_layout.addWidget(price_icon_label)
@@ -406,7 +406,7 @@ class ProductionCostsPage(QWidget):
 
         header_layout = QHBoxLayout()
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/view_all.png").scaled(45, 45, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/view_all.png").scaled(45, 45, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title = QLabel("Costos de Producción")
         title.setStyleSheet("font-size: 26px; font-weight: 700; color: #1b1b1b;")
 

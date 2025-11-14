@@ -1,7 +1,7 @@
-from price.get_rates import convert_to_currency
+from frontend.price.get_rates import convert_to_currency
 import math
 import requests
-from urls import API_URL_PRODUCTION_COSTS 
+from frontend.urls import API_URL_PRODUCTION_COSTS 
 
 def get_costs_from_api():
     response = requests.get(API_URL_PRODUCTION_COSTS)

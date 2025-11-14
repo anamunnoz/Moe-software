@@ -181,3 +181,4 @@ frontend/price/fabrication.json
 frontend/price/get_rates.py
 frontend/price/prices.py
 
+.env

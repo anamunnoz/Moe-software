@@ -8,8 +8,8 @@ from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import Qt
 from difflib import SequenceMatcher
 import unicodedata
-from urls import API_URL_BOOKS
-from utils import http_get, http_post, http_patch, http_delete, make_icon_label
+from frontend.urls import API_URL_BOOKS
+from frontend.utils import http_get, http_post, http_patch, http_delete, make_icon_label
 
 
 SIMILARITY_THRESHOLD = 0.7
@@ -152,7 +152,7 @@ class BooksPage(QWidget):
 
         header = QHBoxLayout()
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/book.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/book.png").scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         title = QLabel("Manejo de libros")
         title.setStyleSheet("font-size: 35px; font-weight: 700; color: #222;")
         header.addWidget(icon)
@@ -194,11 +194,11 @@ class BooksPage(QWidget):
         self.insert_color_pages = QSpinBox()
         self.insert_color_pages.setRange(0, 100000)
 
-        inner_form.addRow(make_icon_label("icons/title.png", "Título"), self.insert_title)
-        inner_form.addRow(make_icon_label("icons/autor.png", "Autor"), self.insert_author)
-        inner_form.addRow(make_icon_label("icons/cant_pag.png", "Número de páginas"), self.insert_pages)
-        inner_form.addRow(make_icon_label("icons/format.png", "Formato de impresión"), self.insert_format)
-        inner_form.addRow(make_icon_label("icons/cant-pag-col.png", "Cantidad de páginas a color"), self.insert_color_pages)
+        inner_form.addRow(make_icon_label("frontend/icons/title.png", "Título"), self.insert_title)
+        inner_form.addRow(make_icon_label("frontend/icons/autor.png", "Autor"), self.insert_author)
+        inner_form.addRow(make_icon_label("frontend/icons/cant_pag.png", "Número de páginas"), self.insert_pages)
+        inner_form.addRow(make_icon_label("frontend/icons/format.png", "Formato de impresión"), self.insert_format)
+        inner_form.addRow(make_icon_label("frontend/icons/cant-pag-col.png", "Cantidad de páginas a color"), self.insert_color_pages)
 
         form_layout.addWidget(form_card)
         spacer = QWidget()
@@ -321,11 +321,11 @@ class BooksPage(QWidget):
         self.update_color_pages = QSpinBox()
         self.update_color_pages.setRange(0, 100000)
 
-        form_layout.addRow(make_icon_label("icons/title.png", "Título"), self.update_title)
-        form_layout.addRow(make_icon_label("icons/autor.png", "Autor"), self.update_author)
-        form_layout.addRow(make_icon_label("icons/cant_pag.png", "Número de páginas"), self.update_pages)
-        form_layout.addRow(make_icon_label("icons/format.png", "Formato de impresión"), self.update_format)
-        form_layout.addRow(make_icon_label("icons/cant-pag-col.png", "Cantidad de páginas a color"), self.update_color_pages)
+        form_layout.addRow(make_icon_label("frontend/icons/title.png", "Título"), self.update_title)
+        form_layout.addRow(make_icon_label("frontend/icons/autor.png", "Autor"), self.update_author)
+        form_layout.addRow(make_icon_label("frontend/icons/cant_pag.png", "Número de páginas"), self.update_pages)
+        form_layout.addRow(make_icon_label("frontend/icons/format.png", "Formato de impresión"), self.update_format)
+        form_layout.addRow(make_icon_label("frontend/icons/cant-pag-col.png", "Cantidad de páginas a color"), self.update_color_pages)
 
         self.btn_update = QPushButton("Aplicar cambios")
         self.btn_update.setObjectName("primaryBtn")
@@ -454,7 +454,7 @@ class BooksPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_pix = QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        icon_pix = QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(icon_pix)
         icon_label.setAlignment(Qt.AlignCenter)
 
@@ -556,11 +556,11 @@ class BooksPage(QWidget):
         form = QFormLayout(info_card)
         form.setSpacing(10)
 
-        form.addRow(make_icon_label("icons/title.png", f"Título: {book['title']}"))
-        form.addRow(make_icon_label("icons/autor.png", f"Autor: {book['author']}"))
-        form.addRow(make_icon_label("icons/cant_pag.png", f"Número de páginas: {book.get('number_pages', '-')}"))
-        form.addRow(make_icon_label("icons/format.png", f"Formato de impresión: {book.get('printing_format', '-')}"))
-        form.addRow(make_icon_label("icons/cant-pag-col.png", f"Páginas a color: {book.get('color_pages', '-')}"))
+        form.addRow(make_icon_label("frontend/icons/title.png", f"Título: {book['title']}"))
+        form.addRow(make_icon_label("frontend/icons/autor.png", f"Autor: {book['author']}"))
+        form.addRow(make_icon_label("frontend/icons/cant_pag.png", f"Número de páginas: {book.get('number_pages', '-')}"))
+        form.addRow(make_icon_label("frontend/icons/format.png", f"Formato de impresión: {book.get('printing_format', '-')}"))
+        form.addRow(make_icon_label("frontend/icons/cant-pag-col.png", f"Páginas a color: {book.get('color_pages', '-')}"))
 
         self.delete_info_layout.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -579,7 +579,7 @@ class BooksPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon_label = QLabel()
-        icon_pix = QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        icon_pix = QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         icon_label.setPixmap(icon_pix)
         icon_label.setAlignment(Qt.AlignCenter)
 
@@ -685,7 +685,7 @@ class BooksPage(QWidget):
         ph_layout = QVBoxLayout(self.view_placeholder)
         ph_layout.setAlignment(Qt.AlignCenter)
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         text = QLabel("Busca un libro y selecciona uno para ver sus detalles.")
         text.setAlignment(Qt.AlignCenter)
         text.setStyleSheet("font-size: 15px; color: #555; font-weight: 500;")
@@ -770,11 +770,11 @@ class BooksPage(QWidget):
         form = QFormLayout(info_card)
         form.setSpacing(10)
 
-        form.addRow(make_icon_label("icons/title.png", f"Título: {book['title']}"))
-        form.addRow(make_icon_label("icons/autor.png", f"Autor: {book['author']}"))
-        form.addRow(make_icon_label("icons/cant_pag.png", f"Número de páginas: {book.get('number_pages', '-')}"))
-        form.addRow(make_icon_label("icons/format.png", f"Formato de impresión: {book.get('printing_format', '-')}"))
-        form.addRow(make_icon_label("icons/cant-pag-col.png", f"Páginas a color: {book.get('color_pages', '-')}"))
+        form.addRow(make_icon_label("frontend/icons/title.png", f"Título: {book['title']}"))
+        form.addRow(make_icon_label("frontend/icons/autor.png", f"Autor: {book['author']}"))
+        form.addRow(make_icon_label("frontend/icons/cant_pag.png", f"Número de páginas: {book.get('number_pages', '-')}"))
+        form.addRow(make_icon_label("frontend/icons/format.png", f"Formato de impresión: {book.get('printing_format', '-')}"))
+        form.addRow(make_icon_label("frontend/icons/cant-pag-col.png", f"Páginas a color: {book.get('color_pages', '-')}"))
 
         self.view_info_layout.addWidget(info_card, alignment=Qt.AlignCenter)
 
@@ -793,7 +793,7 @@ class BooksPage(QWidget):
         ph_layout.setAlignment(Qt.AlignCenter)
 
         icon = QLabel()
-        icon.setPixmap(QPixmap("icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        icon.setPixmap(QPixmap("frontend/icons/select.png").scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         text = QLabel("Busca un libro y selecciona uno para ver sus detalles.")
         text.setAlignment(Qt.AlignCenter)
         text.setStyleSheet("font-size: 15px; color: #555; font-weight: 500;")
@@ -882,7 +882,7 @@ class BooksPage(QWidget):
             background: #eee;
         }
         QComboBox::down-arrow {
-            image: url(icons/arrow.png);
+            image: url(frontend/icons/arrow.png);
             width: 15px;
             height: 15px;
         }
