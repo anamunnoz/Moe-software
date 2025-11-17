@@ -13,7 +13,7 @@ os.chdir(BASE_DIR)
 django.setup()
 
 def start_django_server():
-    call_command('runserver', '127.0.0.1:8000', use_reloader=False)
+    call_command('runserver', '0.0.0.0:8000', use_reloader=False)
 
 t = threading.Thread(target=start_django_server, daemon=True)
 t.start()

@@ -185,3 +185,4 @@ frontend/price/prices.py
 build/
 dist/
 MOE_app.spec
+icono.ico
