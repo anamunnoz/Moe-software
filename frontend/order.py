@@ -1914,11 +1914,13 @@ class OrderWidget(QWidget):
         self.delete_payment_advance = QLabel("")
         self.delete_outstanding_payment = QLabel("")
         self.delete_delivery_price = QLabel("")
+        self.delete_discount = QLabel("")
 
         financial_form.addRow(make_icon_label("frontend/icons/price.png", "Total:"), self.delete_total_price)
         financial_form.addRow(make_icon_label("frontend/icons/money.png", "Pago adelantado:"), self.delete_payment_advance)
         financial_form.addRow(make_icon_label("frontend/icons/pending.png", "Pago pendiente:"), self.delete_outstanding_payment)
         financial_form.addRow(make_icon_label("frontend/icons/delivery.png", "Costo mensajería:"), self.delete_delivery_price)
+        financial_form.addRow(make_icon_label("frontend/icons/discount.png", "Descuento:"), self.delete_discount)
 
         details_layout.addWidget(financial_group)
 
@@ -2083,11 +2085,13 @@ class OrderWidget(QWidget):
             payment_advance = data.get("payment_advance", 0)
             outstanding = data.get("outstanding_payment", 0)
             delivery_price = data.get("delivery_price", 0)
+            discount = data.get("discount", 0)
 
             self.delete_total_price.setText(f"{total_price:.2f} USD")
             self.delete_payment_advance.setText(f"{payment_advance:.2f} USD")
             self.delete_outstanding_payment.setText(f"{outstanding:.2f} USD")
             self.delete_delivery_price.setText(f"{delivery_price:.2f} USD")
+            self.delete_discount.setText(f"{discount} USD")
 
             # --- LIBROS Y ADITIVOS ---
             for i in reversed(range(self.delete_books_layout.count())):
@@ -2188,6 +2192,7 @@ class OrderWidget(QWidget):
         self.delete_outstanding_payment.setText("")
         self.delete_delivery_price.setText("")
         self.delete_btn.setEnabled(False)
+        self.delete_discount.setText("")
 
     def _create_book_widget_delete(self, index, book_info):
         book_widget = QFrame()
