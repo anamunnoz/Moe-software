@@ -3,7 +3,8 @@ from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, QPushButton,
     QTextEdit, QMessageBox, QFormLayout, QListWidget, QListWidgetItem, QDialog,
     QCompleter, QSpinBox, QTabWidget, QGroupBox, QListView, QSizePolicy,
-    QDialogButtonBox, QCheckBox, QScrollArea, QDateEdit,  QApplication, QFrame)
+    QDialogButtonBox, QCheckBox, QScrollArea, QDateEdit,  QApplication, QFrame,
+    QDoubleSpinBox)
 from PySide6.QtCore import Qt, QDate
 from PySide6.QtGui import QIcon, QPixmap,  QStandardItemModel, QStandardItem
 from datetime import date, datetime
@@ -469,6 +470,16 @@ class OrderWidget(QWidget):
         self.total_price_label = QLabel("0.00 $")
         details_layout.addRow(make_icon_label("frontend/icons/price.png", "Total"), self.total_price_label)
 
+        # Descuento general del pedido (numérico)
+        self.add_order_discount = QDoubleSpinBox()
+        self.add_order_discount.setRange(0, 1000000)  
+        self.add_order_discount.setDecimals(2)
+        self.add_order_discount.setValue(0.00)
+        self.add_order_discount.valueChanged.connect(self._update_totals_add)
+
+        details_layout.addRow(make_icon_label("frontend/icons/discount.png", "Descuento (numérico)"), self.add_order_discount)
+
+
         # Pago adelantado
         self.add_payment_advance_edit = QLineEdit()
         self.add_payment_advance_edit.setPlaceholderText("0.00")
@@ -526,11 +537,11 @@ class OrderWidget(QWidget):
         printing_format = book_data.get("printing_format", "normal").lower()
         book_base_price = calculate_price(number_of_pages, color_pages, printing_format)
 
-        total_price_before_discount = book_base_price + caratula_price + other_additives_price
+        total_price_before_discount = book_base_price + caratula_price
         discount_percentage = book_entry.get('discount', 0)
         if discount_percentage > 0:
             total_price_before_discount *= (1 - discount_percentage / 100)
-        final_price = total_price_before_discount * book_entry.get('quantity', 1)
+        final_price = total_price_before_discount * book_entry.get('quantity', 1) + other_additives_price
         
         return final_price
 
@@ -676,34 +687,25 @@ class OrderWidget(QWidget):
 
 
     def _update_totals_add(self):
-        delivery_price = 0
-        delivery_text = self.delivery_price_label.text().replace('$', '').strip()
-        try:
-            delivery_price = float(delivery_text) if delivery_text else 0
-        except ValueError:
-            delivery_price = 0
+        total_books = 0
+        for book in self.selected_books:
+            total_books += self._calculate_book_price(book)
 
-        total_books_price = sum(self._calculate_book_price(book) for book in self.selected_books)
-        total_order_price = total_books_price + delivery_price
-        
-        order_calculation = PriceService.calculate_order_price(
-            selected_books=self.selected_books,
-            books_data=self.books_data,
-            additives_data=self.additives_data,
-            delivery_price=delivery_price
-        )
-        
+        delivery = float(self.delivery_price_label.text().replace("$", "").strip())
+        discount = self.add_order_discount.value()
+
+        total = total_books - discount
+        if total < 0:
+            total = 0
+
+        self.total_price_label.setText(f"{total:.2f} $")
+
         try:
-            payment_advance = float(self.add_payment_advance_edit.text() or 0)
-        except ValueError:
-            payment_advance = 0.0
-        
-        outstanding = PriceService.calculate_outstanding_payment(
-            order_calculation['total_price'], 
-            payment_advance
-        )
-        
-        self.total_price_label.setText(f"{order_calculation['total_price']:.2f} $")
+            advance = float(self.add_payment_advance_edit.text().strip())
+        except:
+            advance = 0
+
+        outstanding = max(total - advance, 0)
         self.add_outstanding_payment_label.setText(f"{outstanding:.2f} $")
 
     def _get_order_summary_for_clipboard(self, order_id):
@@ -783,7 +785,7 @@ class OrderWidget(QWidget):
 
             discount = book_entry.get("discount", 0)
             if discount != 0:
-                mensaje += f"📉 Descuento: {discount}%\n"
+                mensaje += f"📉 Descuento: {discount}%\n\n"
             else:
                 mensaje += "\n"
             
@@ -798,6 +800,8 @@ class OrderWidget(QWidget):
                 mensaje += f"💰 Precio unitario: {precio_unitario:.2f} USD | {unitario_cup} CUP | {unitario_mlc} MLC\n"
                 mensaje += f"💰 Total libro: {libro_total:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
         
+        descuento_numerico = self.add_order_discount.text() or 0
+        mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
         total_final = order_calculation['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
