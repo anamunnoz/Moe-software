@@ -465,10 +465,6 @@ class OrderWidget(QWidget):
         self.add_delivery_date.setReadOnly(True)
         self.add_delivery_date.setButtonSymbols(QDateEdit.NoButtons)
         details_layout.addRow(make_icon_label("frontend/icons/fecha2.png", "Fecha aproximada de entrega"), self.add_delivery_date)
-        
-        # Precio total
-        self.total_price_label = QLabel("0.00 $")
-        details_layout.addRow(make_icon_label("frontend/icons/price.png", "Total"), self.total_price_label)
 
         # Descuento general del pedido (numérico)
         self.add_order_discount = QDoubleSpinBox()
@@ -478,7 +474,10 @@ class OrderWidget(QWidget):
         self.add_order_discount.valueChanged.connect(self._update_totals_add)
 
         details_layout.addRow(make_icon_label("frontend/icons/discount.png", "Descuento (numérico)"), self.add_order_discount)
-
+        
+        # Precio total
+        self.total_price_label = QLabel("0.00 $")
+        details_layout.addRow(make_icon_label("frontend/icons/price.png", "Total"), self.total_price_label)
 
         # Pago adelantado
         self.add_payment_advance_edit = QLineEdit()
@@ -1200,6 +1199,12 @@ class OrderWidget(QWidget):
         self.modify_delivery_date.setReadOnly(True)
         fixed_form.addRow(make_icon_label("frontend/icons/fecha2.png", "Fecha de entrega:"), self.modify_delivery_date)
 
+        # --- DESCUENTO ACTUAL ---
+        self.modify_discount_current = QLineEdit()
+        self.modify_discount_current.setReadOnly(True)
+        fixed_form.addRow(make_icon_label("frontend/icons/discount.png", "Descuento actual(numérico):"), self.modify_discount_current)
+
+
         # --- TOTAL ---
         self.modify_total_price = QLineEdit()
         self.modify_total_price.setReadOnly(True)
@@ -1283,6 +1288,13 @@ class OrderWidget(QWidget):
         self.modify_delivery_new = QComboBox()
         self.modify_delivery_new.currentIndexChanged.connect(self._on_delivery_changed)
         variable_form.addRow(make_icon_label("frontend/icons/zone.png", "Nuevo municipio:"), self.modify_delivery_new)
+
+        # --- NUEVO DESCUENTO ---
+        self.modify_discount_new = QSpinBox()
+        self.modify_discount_new.setRange(0, 100000)
+        self.modify_discount_new.valueChanged.connect(self._update_modify_totals)
+        variable_form.addRow(make_icon_label("frontend/icons/discount.png", "Nuevo descuento(numérico):"), self.modify_discount_new)
+
 
         # --- NUEVO PAGO ADELANTADO ---
         self.modify_payment_advance_new = QSpinBox()
@@ -1452,7 +1464,12 @@ class OrderWidget(QWidget):
             self.modify_order_date.setText(order_date or "No especificada")
             self.modify_delivery_date.setText(delivery_date or "No especificada")
 
-            # --- PRECIOS (DE BASE DE DATOS) ---
+            # --- DESCUENTO ---
+            discount = data.get("discount", 0)
+            self.modify_discount_current.setText(f"{discount:.2f}")
+            self.modify_discount_new.setValue(int(discount))
+
+            # --- PRECIOS  ---
             total_price = data.get("total_price", 0)
             payment_advance = data.get("payment_advance", 0)
             outstanding = data.get("outstanding_payment", total_price - payment_advance)
@@ -1521,7 +1538,7 @@ class OrderWidget(QWidget):
             total_price_text = self.modify_total_price.text()
             total_price = float(total_price_text) if total_price_text else 0
             payment_advance = self.modify_payment_advance_new.value()
-            outstanding_payment = total_price - payment_advance
+            outstanding_payment = total_price - payment_advance - discount
             self.modify_outstanding_payment.setText(f"{outstanding_payment:.2f}")           
         except Exception as e:
             pass
@@ -1546,7 +1563,8 @@ class OrderWidget(QWidget):
                 "_type": self.modify_order_type_new.currentText(),
                 "payment_advance": self.modify_payment_advance_new.value(),
                 "total_price": float(self.modify_total_price.text() or 0),
-                "outstanding_payment": float(self.modify_outstanding_payment.text() or 0)
+                "outstanding_payment": float(self.modify_outstanding_payment.text() or 0),
+                "discount": self.modify_discount_new.value(),
             }
             
             current_delivery_id = self.modify_delivery_new.currentData()
@@ -1600,6 +1618,9 @@ class OrderWidget(QWidget):
         self.modify_outstanding_payment.clear()
         self.modify_order_status_icon.clear()
         self._set_modify_form_enabled(True)
+        self.modify_discount_current.clear()
+        self.modify_discount_new.setValue(0)
+
 
     def _format_order_summary(self, order_data):
         mensaje = f"🔰 ORDEN No. {order_data['idOrder']}\n\n"
@@ -1645,7 +1666,7 @@ class OrderWidget(QWidget):
                 mensaje += f"💰 {service['name']}: {service['price']} USD | {service_cup} CUP | {service_mlc} MLC\n"
             
             if discount != 0:
-                mensaje += f"📉 Descuento: {discount}%\n"
+                mensaje += f"📉 Descuento: {discount}%\n\n"
             else:
                 mensaje += "\n"
             
@@ -1664,6 +1685,10 @@ class OrderWidget(QWidget):
                 mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
             else:
                 mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
+
+
+        descuento_numerico = self.add_order_discount.text() or 0
+        mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
         
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
