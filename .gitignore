@@ -182,3 +182,6 @@ frontend/price/get_rates.py
 frontend/price/prices.py
 
 .env
+build/
+dist/
+MOE_app.spec
