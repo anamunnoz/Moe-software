@@ -756,7 +756,8 @@ class OrderWidget(QWidget):
                 for additive in self.additives_data:
                     if add_id == additive['idAdditive']:
                         if additive["name"].lower().startswith("carátula"):
-                            caratula_name = additive['name']
+                            nombre_limpio = additive['name'].split("(")[0].strip()
+                            caratula_name = nombre_limpio
                             caratula_price = additive['price']
                         elif additive["name"].lower().startswith("servicio"):
                             service_additives.append(additive)
@@ -800,7 +801,8 @@ class OrderWidget(QWidget):
                 mensaje += f"💰 Total libro: {libro_total:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
         
         descuento_numerico = self.add_order_discount.text() or 0
-        mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
+        if descuento_numerico != 0:
+            mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
         total_final = order_calculation['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
@@ -1640,7 +1642,8 @@ class OrderWidget(QWidget):
             
             for additive in additives:
                 if additive["name"].lower().startswith("carátula"):
-                    caratula_name = additive['name']
+                    nombre_limpio = additive['name'].split("(")[0].strip()
+                    caratula_name = nombre_limpio
                     caratula_price = additive['price']
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
@@ -1688,7 +1691,8 @@ class OrderWidget(QWidget):
 
 
         descuento_numerico = self.add_order_discount.text() or 0
-        mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
+        if descuento_numerico != 0:
+            mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
         
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')

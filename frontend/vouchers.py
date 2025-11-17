@@ -238,7 +238,8 @@ class VouchersTab(QWidget):
             
             for additive in additives:
                 if additive["name"].lower().startswith("carátula"):
-                    caratula_name = additive['name']
+                    nombre_limpio = additive['name'].split("(")[0].strip()
+                    caratula_name = nombre_limpio
                     caratula_price = additive['price']
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
@@ -274,7 +275,8 @@ class VouchersTab(QWidget):
             else:
                 text += f"💰 Total libro: {precio_total_libro:.2f} USD<br><br>"
 
-        text += f"💰 Descuento general: {order_data['discount']:.2f} USD\n"
+        if order_data['discount'] != 0:
+            text += f"💰 Descuento general: {order_data['discount']:.2f} USD\n"
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
@@ -305,7 +307,10 @@ class VouchersTab(QWidget):
         <div style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; line-height: 1.4; margin: 0; padding: 0;">
             {text.replace('\n', '<br>')}
             <div style="margin-top: 10px; clear: both;">
-                <div style="font-weight: bold; margin-bottom: 5px; font-size: 10px; text-align: left;">🤗 Únete a nuestro WhatsApp</div>
+                <div style="font-weight: bold; margin-bottom: 5px; font-size: 10px; text-align: left;">Comparte este QR con un amigo 🔗</div>
+                <div margin-bottom: 5px; font-size: 7px; text-align: left;">Para que reciba un 10% de descuento</div>
+                <div margin-bottom: 5px; font-size: 7px; text-align: left;">en su primera compra. . Si compra,</div>
+                <div margin-bottom: 5px; font-size: 7px; text-align: left;">tú obtendrás un 10% en la tuya.</div>
                 <div style="text-align: left;">
                     {qr_html}
                 </div>

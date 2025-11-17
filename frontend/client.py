@@ -998,7 +998,8 @@ class ClientsPage(QWidget):
             
             for additive in additives:
                 if additive["name"].lower().startswith("carátula"):
-                    caratula_name = additive['name']
+                    nombre_limpio = additive['name'].split("(")[0].strip()
+                    caratula_name = nombre_limpio
                     caratula_price = additive['price']
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
@@ -1046,7 +1047,8 @@ class ClientsPage(QWidget):
             else:
                 mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
 
-        mensaje += f"💰 Descuento general: {order_data['discount']} USD\n"
+        if order_data['discount'] !=0:
+            mensaje += f"💰 Descuento general: {order_data['discount']} USD\n"
 
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
