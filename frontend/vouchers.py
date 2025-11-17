@@ -16,6 +16,7 @@ import re
 import qrcode
 from urllib.parse import quote
 from docx.shared import Cm
+from frontend.price.price import calculate_price                                         
 
 
 class VouchersTab(QWidget):
@@ -242,8 +243,12 @@ class VouchersTab(QWidget):
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
 
-            base_price = book.get('number_pages', 0)
-            precio_base_caratula = base_price + caratula_price
+
+            number_of_pages = book.get('number_pages', 0)
+            color_pages = book.get("color_pages", 0)
+            printing_format = book.get("printing_format", "normal").lower()
+            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
+
             
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
             mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
@@ -256,7 +261,7 @@ class VouchersTab(QWidget):
                 text += f"💰 {service['name']}: {service['price']} USD<br>"
 
             if discount != 0:
-                text += f"📉 Descuento: {discount}%<br>"
+                text += f"📉 Descuento: {discount}%<br><br>"
 
             precio_base_con_descuento = precio_base_caratula * (1 - discount / 100)
             precio_servicios = sum(service['price'] for service in service_additives)
@@ -267,8 +272,9 @@ class VouchersTab(QWidget):
                 text += f"💰 Precio unitario: {precio_unitario_final:.2f} USD<br>"
                 text += f"💰 Total libro: {precio_total_libro:.2f} USD<br><br>"
             else:
-                text += f"💰 Total libro: {precio_total_libro:.2f} USD<br>"
+                text += f"💰 Total libro: {precio_total_libro:.2f} USD<br><br>"
 
+        text += f"💰 Descuento general: {order_data['discount']:.2f} USD\n"
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')

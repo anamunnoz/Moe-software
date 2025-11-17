@@ -473,7 +473,7 @@ class OrderWidget(QWidget):
         self.add_order_discount.setValue(0.00)
         self.add_order_discount.valueChanged.connect(self._update_totals_add)
 
-        details_layout.addRow(make_icon_label("frontend/icons/discount.png", "Descuento (numérico)"), self.add_order_discount)
+        details_layout.addRow(make_icon_label("frontend/icons/numerical_discount.png", "Descuento (numérico)"), self.add_order_discount)
         
         # Precio total
         self.total_price_label = QLabel("0.00 $")
@@ -1202,7 +1202,7 @@ class OrderWidget(QWidget):
         # --- DESCUENTO ACTUAL ---
         self.modify_discount_current = QLineEdit()
         self.modify_discount_current.setReadOnly(True)
-        fixed_form.addRow(make_icon_label("frontend/icons/discount.png", "Descuento actual(numérico):"), self.modify_discount_current)
+        fixed_form.addRow(make_icon_label("frontend/icons/numerical_discount.png", "Descuento actual(numérico):"), self.modify_discount_current)
 
 
         # --- TOTAL ---
@@ -1293,7 +1293,7 @@ class OrderWidget(QWidget):
         self.modify_discount_new = QSpinBox()
         self.modify_discount_new.setRange(0, 100000)
         self.modify_discount_new.valueChanged.connect(self._update_modify_totals)
-        variable_form.addRow(make_icon_label("frontend/icons/discount.png", "Nuevo descuento(numérico):"), self.modify_discount_new)
+        variable_form.addRow(make_icon_label("frontend/icons/numerical_discount.png", "Nuevo descuento(numérico):"), self.modify_discount_new)
 
 
         # --- NUEVO PAGO ADELANTADO ---

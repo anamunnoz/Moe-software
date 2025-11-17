@@ -9,6 +9,7 @@ from PySide6.QtGui import QPixmap, QMouseEvent
 from frontend.urls import API_URL_CLIENTES, API_URL_BOOKS, API_URL_ADITIVOS, API_URL_CLIENTES, API_URL_ORDERS
 from frontend.utils import http_get, http_post, http_patch, http_delete, make_icon_label
 from frontend.price.get_rates import convert_to_currency
+from frontend.price.price import calculate_price
 
 class ClickableOrderCard(QFrame):
     clicked = Signal(dict)
@@ -1001,8 +1002,12 @@ class ClientsPage(QWidget):
                     caratula_price = additive['price']
                 elif additive["name"].lower().startswith("servicio"):
                     service_additives.append(additive)
+
+            number_of_pages = book.get('number_pages', 0)
+            color_pages = book.get("color_pages", 0)
+            printing_format = book.get("printing_format", "normal").lower()
+            base_price = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
             
-            base_price = book.get('number_pages', 0)
             
             precio_base_caratula = base_price + caratula_price
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
@@ -1021,7 +1026,7 @@ class ClientsPage(QWidget):
                 mensaje += f"💰 {service['name']}: {service['price']} USD | {service_cup} CUP | {service_mlc} MLC\n"
             
             if discount != 0:
-                mensaje += f"📉 Descuento: {discount}%\n"
+                mensaje += f"📉 Descuento: {discount}%\n\n"
             else:
                 mensaje += "\n"
             
@@ -1040,7 +1045,9 @@ class ClientsPage(QWidget):
                 mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
             else:
                 mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
-        
+
+        mensaje += f"💰 Descuento general: {order_data['discount']} USD\n"
+
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
