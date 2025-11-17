@@ -4,7 +4,7 @@ class Client(models.Model):
     idClient = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=50)
-    identity = models.CharField(max_length= 20)
+    identity = models.CharField(max_length= 20, unique=True)
 
     def __str__(self):
         return self.name
@@ -49,8 +49,8 @@ class Order(models.Model):
     idOrder = models.AutoField(primary_key=True)
     _type = models.CharField(max_length=100, default = 'Regular')
     address = models.TextField(null=True, blank=True)
-    idDelivery = models.ForeignKey(Delivery, on_delete=models.CASCADE)
-    idClient = models.ForeignKey(Client, on_delete=models.CASCADE)
+    idDelivery = models.ForeignKey(Delivery, on_delete=models.PROTECT)
+    idClient = models.ForeignKey(Client, on_delete=models.PROTECT)
     order_date = models.CharField(max_length=10)
     delivery_date = models.CharField(max_length=10)
     total_price = models.FloatField()
