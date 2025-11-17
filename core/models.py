@@ -60,10 +60,12 @@ class Order(models.Model):
     outstanding_payment = models.FloatField()
     Requested_book = models.ManyToManyField(Requested_book, through='Book_on_order')
     added_to_excel = models.BooleanField(default=False)
+    discount = models.FloatField(default=0)
     
 
     def save(self, *args, **kwargs):
-        self.outstanding_payment = round(self.total_price - self.payment_advance, 2)
+        total_effective = self.total_price - self.discount
+        self.outstanding_payment = round(total_effective - self.payment_advance, 2)
         if self.outstanding_payment < 0:
             self.outstanding_payment = 0
         super().save(*args, **kwargs)

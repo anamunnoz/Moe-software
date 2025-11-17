@@ -149,7 +149,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'payment_advance',
             'outstanding_payment',
             'requested_books',
-            'added_to_excel'
+            'added_to_excel',
+            'discount'
         ]
 
     @transaction.atomic

@@ -393,6 +393,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             "added_to_excel": order.added_to_excel,
             "delivery_zone": order.idDelivery.zone if order.idDelivery else None,
             "delivery_price": order.idDelivery.price if order.idDelivery else 0,
+            "discount": order.discount,
             "client": {
                 "idClient": order.idClient.idClient,
                 "name": order.idClient.name,
@@ -456,7 +457,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         allowed_fields = [
             'address', 'pay_method', '_type', 'payment_advance',
-            'total_price', 'idDelivery', 'done', 'added_to_excel'
+            'total_price', 'idDelivery', 'done', 'added_to_excel',
+            'discount'
         ]
         update_data = {k: v for k, v in request.data.items() if k in allowed_fields}
 
