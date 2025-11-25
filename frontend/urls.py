@@ -1,7 +1,15 @@
 import os
 from dotenv import load_dotenv
+import sys
 
-load_dotenv()
+def load_env_for_pyinstaller():
+    if getattr(sys, 'frozen', False):
+        env_path = os.path.join(sys._MEIPASS, ".env")
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+    else:
+        load_dotenv()
+load_env_for_pyinstaller()
 
 API_HOST = os.getenv("API_HOST", "127.0.0.1")
 API_PORT = os.getenv("API_PORT", "8000")

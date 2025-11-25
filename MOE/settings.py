@@ -1,8 +1,17 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import sys
 
-load_dotenv()
+def load_env_for_pyinstaller():
+    if getattr(sys, 'frozen', False):
+        env_path = os.path.join(sys._MEIPASS, ".env")
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+    else:
+        load_dotenv()
+
+load_env_for_pyinstaller()
 
 if os.getenv("DJANGO_BASE_DIR"):
     BASE_DIR = Path(os.getenv("DJANGO_BASE_DIR")) / "_internal"
@@ -60,11 +69,11 @@ WSGI_APPLICATION = 'MOE.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv("POSTGRES_DB"),
-        'USER': os.getenv("POSTGRES_USER"),
-        'PASSWORD': os.getenv("POSTGRES_PASSWORD"),
-        'HOST': os.getenv("POSTGRES_HOST"),
-        'PORT': os.getenv("POSTGRES_PORT", "5432"),
+        'NAME': os.getenv("DATABASE_NAME"),
+        'USER': os.getenv("DATABASE_USER"),
+        'PASSWORD': os.getenv("DATABASE_PASSWORD"),
+        'HOST': os.getenv("DATABASE_HOST"),
+        'PORT': os.getenv("DATABASE_PORT", "5432"),
     }
 }
 

@@ -1,24 +1,42 @@
-import os, sys, threading, time, socket, django
+import os
+import sys
+import threading
+import time
+import socket
+import django
 from django.core.management import call_command
-import PySide6, PySide6.QtCore
-from frontend.main import main as frontend_main
 import traceback
+from frontend.main import main as frontend_main
+
+if getattr(sys, 'frozen', False):
+    sys.stdout = open("output.log", "w", encoding="utf-8")
+    sys.stderr = open("error.log", "w", encoding="utf-8")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "MOE.settings")
 
 os.chdir(BASE_DIR)
-
 django.setup()
 
 def start_django_server():
-    call_command('runserver', '0.0.0.0:8000', use_reloader=False)
+    try:
+        call_command(
+            'runserver',
+            '0.0.0.0:8000',
+            use_reloader=False,
+            verbosity=0
+        )
+    except Exception as e:
+        with open("django_error.log", "w", encoding="utf-8") as f:
+            f.write(str(e))
+
 
 t = threading.Thread(target=start_django_server, daemon=True)
 t.start()
 
-def wait_for_server(host='127.0.0.1', port=8000, timeout=30):
+
+def wait_for_server(host='127.0.0.1', port=8000, timeout=40):
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -29,7 +47,8 @@ def wait_for_server(host='127.0.0.1', port=8000, timeout=30):
     return False
 
 if not wait_for_server():
-    print("ERROR: El servidor Django no arrancó en 30s. Revisa logs.")
+    with open("startup.log", "w", encoding="utf-8") as f:
+        f.write("ERROR: El servidor Django no arrancó en tiempo.")
 
 try:
     if getattr(sys, 'frozen', False):
@@ -45,4 +64,5 @@ try:
         os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = os.path.join(dll_path, "plugins", "platforms")
     frontend_main()
 except Exception as e:
-    traceback.print_exc()
+    with open("fatal_error.log", "w", encoding="utf-8") as f:
+        f.write(traceback.format_exc())
