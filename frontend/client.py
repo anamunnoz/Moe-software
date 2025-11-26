@@ -988,51 +988,51 @@ class ClientsPage(QWidget):
             additives = book_info['additives']
             discount = book_info['discount']
             cantidad = book_info['quantity']
-            
+            base_price = book_info.get("base_price", 0)
             titulo = book.get("title", "Desconocido")
             autor = book.get("author", "Sin autor")
-            
+
             caratula_name = "Tapa Normal"
             caratula_price = 0
             service_additives = []
-            
-            for additive in additives:
-                if additive["name"].lower().startswith("carátula"):
-                    nombre_limpio = additive['name'].split("(")[0].strip()
-                    caratula_name = nombre_limpio
-                    caratula_price = additive['price']
-                elif additive["name"].lower().startswith("servicio"):
-                    service_additives.append(additive)
 
-            number_of_pages = book.get('number_pages', 0)
-            color_pages = book.get("color_pages", 0)
-            printing_format = book.get("printing_format", "normal").lower()
-            base_price = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
-            
-            
-            precio_base_caratula = base_price + caratula_price
+            for additive in additives:
+                price_add = additive.get("price", 0)
+                print('precio del aditivo', price_add)
+
+                if additive["name"].lower().startswith("carátula"):
+                    caratula_name = additive["name"].split("(")[0].strip()
+                    caratula_price = price_add
+                elif additive["name"].lower().startswith("servicio"):
+                    service_additives.append({
+                        "name": additive["name"],
+                        "price": price_add
+                    })
+            precio_base_caratula = base_price + caratula_price  
+
             cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
             mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
-            
+
             mensaje += f"📚 Título: {titulo}\n"
             mensaje += f"👤 Autor: {autor}\n"
             if cantidad > 1:
                 mensaje += f"🔢 Cantidad: {cantidad}\n"
-            
-            mensaje += f"💰 {caratula_name}: {precio_base_caratula} USD | {cup_price_base} CUP | {mlc_price_base} MLC\n"
-            
+
+            mensaje += (
+                f"💰 {caratula_name}: {precio_base_caratula} USD | "
+                f"{cup_price_base} CUP | {mlc_price_base} MLC\n"
+            )
+
             for service in service_additives:
                 service_cup = convert_to_currency(service['price'], 'USD', 'CUP')
                 service_mlc = convert_to_currency(service['price'], 'USD', 'MLC')
-                mensaje += f"💰 {service['name']}: {service['price']} USD | {service_cup} CUP | {service_mlc} MLC\n"
-            
-            if discount != 0:
-                mensaje += f"📉 Descuento: {discount}%\n\n"
-            else:
-                mensaje += "\n"
-            
+                mensaje += (
+                    f"💰 {service['name']}: {service['price']} USD | "
+                    f"{service_cup} CUP | {service_mlc} MLC\n"
+                )
+
             precio_base_con_descuento = precio_base_caratula * (1 - discount / 100)
-            precio_servicios = sum(service['price'] for service in service_additives)
+            precio_servicios = sum(s['price'] for s in service_additives)
             precio_unitario_final = precio_base_con_descuento + precio_servicios
             precio_total_libro = precio_unitario_final * cantidad
 
@@ -1040,24 +1040,33 @@ class ClientsPage(QWidget):
             unitario_mlc = convert_to_currency(precio_unitario_final, 'USD', 'MLC')
             libro_total_cup = convert_to_currency(precio_total_libro, 'USD', 'CUP')
             libro_total_mlc = convert_to_currency(precio_total_libro, 'USD', 'MLC')
-            
-            if cantidad > 1:
-                mensaje += f"💰 Precio unitario: {precio_unitario_final:.2f} USD | {unitario_cup} CUP | {unitario_mlc} MLC\n"
-                mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
-            else:
-                mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
 
-        if order_data['discount'] !=0:
+            if cantidad > 1:
+                mensaje += (
+                    f"💰 Precio unitario: {precio_unitario_final:.2f} USD | "
+                    f"{unitario_cup} CUP | {unitario_mlc} MLC\n"
+                )
+                mensaje += (
+                    f"💰 Total libro: {precio_total_libro:.2f} USD | "
+                    f"{libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
+                )
+            else:
+                mensaje += (
+                    f"💰 Total libro: {precio_total_libro:.2f} USD | "
+                    f"{libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
+                )
+
+        if order_data['discount'] != 0:
             mensaje += f"💰 Descuento general: {order_data['discount']} USD\n"
 
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
         mensaje += f"💰 Total a pagar: {total_final:.2f} USD | {total_cup} CUP | {total_mlc} MLC\n\n"
-        
+
         mensaje += f"💰 Pago por adelantado: {order_data['payment_advance']:.2f} USD\n"
         mensaje += f"💰 Pago pendiente: {order_data['outstanding_payment']:.2f} USD\n\n"
-        
+
         if order_data['delivery_price'] > 0:
             delivery_cup = convert_to_currency(order_data['delivery_price'], 'USD', 'CUP')
             delivery_mlc = convert_to_currency(order_data['delivery_price'], 'USD', 'MLC')
@@ -1069,17 +1078,17 @@ class ClientsPage(QWidget):
         mensaje += f"— Nombre: {order_data['client']['name']}\n"
         mensaje += f"— Carnet de Identidad: {order_data['client']['identity']}\n"
         mensaje += f"— Teléfono: {order_data['client']['phone_number']}\n"
-        
-        if (order_data['delivery_zone'] and 
+
+        if (order_data['delivery_zone'] and
             'recogida' not in order_data['delivery_zone'].lower() and 
             order_data['address']):
             mensaje += f"— Dirección de entrega: {order_data['address']}\n"
-        
+
         mensaje += f"— Servicio de entrega: {order_data['_type']}\n"
         mensaje += f"— Método de pago: {order_data['pay_method']}\n\n"
-        
+
         mensaje += "🔆 Conoce nuestros trabajos en instagram.com/moe.libros"
-        
+
         return mensaje
 
     def _show_detailed_order_summary(self, mensaje, order_id):

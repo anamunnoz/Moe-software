@@ -216,109 +216,114 @@ class VouchersTab(QWidget):
         return temp_file.name
 
     def _format_voucher_html(self, order_data, qr_html):
-        text = f"<div style='font-weight: bold; font-size: 12px;'>🔰 ORDEN No. {order_data['idOrder']}</div><br>"
-        text += f"🗓 Fecha: {order_data['order_date']}<br>"
-        text += f"🗓 Entrega: {order_data['delivery_date']}<br>"
+        text = (
+            f"<div style='font-weight: bold; font-size: 12px;'>🔰 ORDEN No. {order_data['idOrder']}</div><br>"
+            f"🗓 Fecha: {order_data['order_date']}<br>"
+            f"🗓 Entrega: {order_data['delivery_date']}<br>"
+        )
 
-        for book_info in order_data['books']:
-            book = book_info['book']
-            additives = book_info['additives']
-            discount = book_info['discount']
-            cantidad = book_info['quantity']
-            
+        for book_info in order_data["books"]:
+            book = book_info["book"]
+            additives = book_info["additives"]
+            discount = book_info["discount"]
+            cantidad = book_info["quantity"]
+
+            base_price = book_info.get("base_price", 0)
+
             text += f"<div style='font-weight: bold;'>📚 Título: {book.get('title', 'Desconocido')}</div><br>"
             text += f"👤 Autor: {book.get('author', 'Sin autor')}<br>"
-            
+
             if cantidad > 1:
                 text += f"🔢 Cantidad: {cantidad}<br>"
 
             caratula_name = "Tapa Normal"
             caratula_price = 0
             service_additives = []
-            
+
             for additive in additives:
+                add_price = additive.get("additive_price", 0)
                 if additive["name"].lower().startswith("carátula"):
-                    nombre_limpio = additive['name'].split("(")[0].strip()
-                    caratula_name = nombre_limpio
-                    caratula_price = additive['price']
+                    caratula_name = additive["name"].split("(")[0].strip()
+                    caratula_price = add_price
                 elif additive["name"].lower().startswith("servicio"):
-                    service_additives.append(additive)
+                    service_additives.append(
+                        {
+                            "name": additive["name"],
+                            "price": add_price
+                        }
+                    )
 
+            precio_base_caratula = base_price + caratula_price
 
-            number_of_pages = book.get('number_pages', 0)
-            color_pages = book.get("color_pages", 0)
-            printing_format = book.get("printing_format", "normal").lower()
-            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
-
-            
-            cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
-            mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
-            
             text += f"💰 {caratula_name}: {precio_base_caratula} USD<br>"
 
             for service in service_additives:
-                service_cup = convert_to_currency(service['price'], 'USD', 'CUP')
-                service_mlc = convert_to_currency(service['price'], 'USD', 'MLC')
                 text += f"💰 {service['name']}: {service['price']} USD<br>"
 
             if discount != 0:
                 text += f"📉 Descuento: {discount}%<br><br>"
 
             precio_base_con_descuento = precio_base_caratula * (1 - discount / 100)
-            precio_servicios = sum(service['price'] for service in service_additives)
+            precio_servicios = sum(s["price"] for s in service_additives)
             precio_unitario_final = precio_base_con_descuento + precio_servicios
             precio_total_libro = precio_unitario_final * cantidad
-            
+
             if cantidad > 1:
                 text += f"💰 Precio unitario: {precio_unitario_final:.2f} USD<br>"
                 text += f"💰 Total libro: {precio_total_libro:.2f} USD<br><br>"
             else:
                 text += f"💰 Total libro: {precio_total_libro:.2f} USD<br><br>"
 
-        if order_data['discount'] != 0:
-            text += f"💰 Descuento general: {order_data['discount']:.2f} USD\n"
-        total_final = order_data['total_price']
-        total_cup = convert_to_currency(total_final, 'USD', 'CUP')
-        total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
-        text += f"<div style='font-weight: bold; font-size: 12px;'>💰 Total a pagar: {total_final:.2f} USD</div><br>"
-        
+        if order_data["discount"] != 0:
+            text += f"💰 Descuento general: {order_data['discount']:.2f} USD<br>"
+
+        total_final = order_data["total_price"]
+        text += (
+            f"<div style='font-weight: bold; font-size: 12px;'>"
+            f"💰 Total a pagar: {total_final:.2f} USD"
+            f"</div><br>"
+        )
+
         text += f"💰 Pago adelanto: {order_data['payment_advance']:.2f} USD<br>"
         text += f"💰 Pago pendiente: {order_data['outstanding_payment']:.2f} USD<br><br>"
-        
-        if order_data['delivery_price'] > 0:
+
+        if order_data["delivery_price"] > 0:
             text += f"🚗 Mensajería: {order_data['delivery_price']:.2f} USD<br>"
         else:
-            text += f"🚗 Mensajería: Recogida<br><br>"
+            text += "🚗 Mensajería: Recogida<br><br>"
 
         text += "<div style='font-weight: bold; font-size: 12px;'>👤 Información de contacto:</div><br>"
         text += f"— Nombre: {order_data['client']['name']}<br>"
         text += f"— Carnet de identidad: {order_data['client']['identity']}<br>"
         text += f"— Teléfono: {order_data['client']['phone_number']}<br>"
-        
-        if (order_data.get('delivery_zone') and 
-            'recogida' not in order_data['delivery_zone'].lower() and 
-            order_data['address']):
+
+        if (
+            order_data.get("delivery_zone")
+            and "recogida" not in order_data["delivery_zone"].lower()
+            and order_data["address"]
+        ):
             text += f"— Dirección de entrega: {order_data['address']}<br>"
-        
+
         text += f"— Servicio de entrega: {order_data['_type']}<br>"
         text += f"— Método de pago: {order_data['pay_method']}<br>"
-         
+
         html_content = f"""
         <div style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; line-height: 1.4; margin: 0; padding: 0;">
             {text.replace('\n', '<br>')}
             <div style="margin-top: 10px; clear: both;">
                 <div style="font-weight: bold; margin-bottom: 5px; font-size: 10px; text-align: left;">Comparte este QR con un amigo 🔗</div>
-                <div margin-bottom: 5px; font-size: 7px; text-align: left;">Para que reciba un 10% de descuento</div>
-                <div margin-bottom: 5px; font-size: 7px; text-align: left;">en su primera compra. . Si compra,</div>
-                <div margin-bottom: 5px; font-size: 7px; text-align: left;">tú obtendrás un 10% en la tuya.</div>
+                <div style="font-size: 10px; text-align: left;">Para que reciba un 10% de descuento</div>
+                <div style="font-size: 10px; text-align: left;">en su primera compra. Si compra,</div>
+                <div style="font-size: 10px; text-align: left;">tú obtendrás un 10% en la tuya.</div>
                 <div style="text-align: left;">
                     {qr_html}
                 </div>
             </div>
         </div>
         """
-        
+
         return html_content
+
 
     def _create_word_document(self, orders_data):
         documents_path  = os.path.join(os.path.expanduser("~"), "Documents")
