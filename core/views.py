@@ -283,24 +283,28 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         try:
             for rb in requested_books_data:
-                requested_book_serializer = RequestedBookSerializer(data={"idBook": rb["idBook"]})
+                requested_book_serializer = RequestedBookSerializer(
+                    data={"idBook": rb["idBook"]}
+                )
                 requested_book_serializer.is_valid(raise_exception=True)
                 requested_book = requested_book_serializer.save()
-                additives = rb.get("additives", [])
-                for add_id in additives:
+
+                for add_id in rb.get("additives", []):
                     additive_obj = Additive.objects.get(pk=add_id)
+                    additive_price = additive_obj.price
                     Requested_book_additive.objects.create(
                         idRequested_book=requested_book,
-                        idAdditive=additive_obj
+                        idAdditive=additive_obj,
+                        additive_price=additive_price
                     )
-                    
+
                 Book_on_order.objects.create(
                     idRequested_book=requested_book,
                     idOrder=order,
                     discount=rb.get("discount", 0),
                     ready=rb.get("ready", False),
-                    quantity = rb.get("quantity", 1),
-                    base_price=rb.get("base_price")
+                    quantity=rb.get("quantity", 1),
+                    base_price=rb.get("base_price", 0)
                 )
 
                 created_requested_books.append(requested_book.idRequested_book)
