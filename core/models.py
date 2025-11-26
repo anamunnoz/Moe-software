@@ -76,11 +76,13 @@ class Book_on_order(models.Model):
     discount = models.FloatField()
     ready = models.BooleanField()
     quantity = models.IntegerField()
+    base_price = models.FloatField()
 
 
 class Requested_book_additive(models.Model):
     idRequested_book = models.ForeignKey(Requested_book, on_delete=models.CASCADE)
     idAdditive = models.ForeignKey(Additive, on_delete=models.CASCADE)
+    additive_price = models.FloatField()
 
     def __str__(self):
         return f"{self.idRequested_book.idBook.title} + {self.idAdditive.name}"
