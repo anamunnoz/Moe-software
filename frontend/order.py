@@ -800,8 +800,8 @@ class OrderWidget(QWidget):
                 mensaje += f"💰 Precio unitario: {precio_unitario:.2f} USD | {unitario_cup} CUP | {unitario_mlc} MLC\n"
                 mensaje += f"💰 Total libro: {libro_total:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
         
-        descuento_numerico = self.add_order_discount.text() or 0
-        if descuento_numerico != 0:
+        descuento_numerico = float(self.add_order_discount.text()) or 0
+        if descuento_numerico >0:
             mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
         total_final = order_calculation['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
@@ -848,6 +848,11 @@ class OrderWidget(QWidget):
             QMessageBox.warning(self, "Error", "El libro especificado no existe.")
             return
 
+        number_of_pages = book['number_pages']
+        color_pages = book["color_pages"]
+        printing_format = book["printing_format"].lower()
+        base_price = calculate_price(number_of_pages, color_pages, printing_format)
+
         book_entry = {
             "book_id": book["idBook"],
             "title": book["title"],
@@ -855,7 +860,8 @@ class OrderWidget(QWidget):
             "additives": [a["idAdditive"] for a in self.selected_additives],
             "additives_names": [a["name"] for a in self.selected_additives],
             "discount": self.add_discount_spin.value(),
-            "quantity": self.add_quantity_spin.value()
+            "quantity": self.add_quantity_spin.value(),
+            "base_price": base_price
         }
 
         self.selected_books.append(book_entry)
@@ -962,11 +968,22 @@ class OrderWidget(QWidget):
             "requested_books": []
         }
         for book_entry in self.selected_books:
+            additive_list = []
+            additive_prices = book_entry.get("additive_prices", {})
+
+            for add_id in book_entry["additives"]:
+                additive_list.append({
+                    "idAdditive": add_id,
+                    "additive_price": additive_prices.get(add_id, 0)
+                })
+            print(book_entry)
             book_data = {
                 "idBook": book_entry["book_id"],
                 "additives": book_entry["additives"],
                 "discount": book_entry["discount"],
-                "quantity": book_entry["quantity"]
+                "quantity": book_entry["quantity"],
+                "base_price": book_entry.get("base_price", 0)
+                
             }
             order_data["requested_books"].append(book_data)
         
@@ -1634,94 +1651,91 @@ class OrderWidget(QWidget):
             additives = book_info['additives']
             discount = book_info['discount']
             cantidad = book_info['quantity']
+
             titulo = book.get("title", "Desconocido")
             autor = book.get("author", "Sin autor")
+
+            base_price = book_info.get("base_price", 0)
+
+            service_additives = []
             caratula_name = "Tapa Normal"
             caratula_price = 0
-            service_additives = []
-            
-            for additive in additives:
-                if additive["name"].lower().startswith("carátula"):
-                    nombre_limpio = additive['name'].split("(")[0].strip()
-                    caratula_name = nombre_limpio
-                    caratula_price = additive['price']
-                elif additive["name"].lower().startswith("servicio"):
-                    service_additives.append(additive)
-            
-            number_of_pages = book.get('number_pages', 0)
-            color_pages = book.get("color_pages", 0)
-            printing_format = book.get("printing_format", "normal").lower()
-            precio_base_caratula = calculate_price(number_of_pages, color_pages, printing_format) + caratula_price
 
-            cup_price_base = convert_to_currency(precio_base_caratula, 'USD', 'CUP')
-            mlc_price_base = convert_to_currency(precio_base_caratula, 'USD', 'MLC')
-            
+            for additive in additives:
+                add_name = additive["name"].lower()
+
+                if add_name.startswith("carátula"):
+                    caratula_name = additive["name"]
+                    caratula_price = additive["price"]
+                elif add_name.startswith("servicio"):
+                    service_additives.append({
+                        "name": additive["name"],
+                        "price": additive["price"]
+                    })
+
+            precio_unitario = base_price + caratula_price + sum(a["price"] for a in service_additives)
+            precio_unitario_desc = precio_unitario * (1 - discount / 100)
+
+            total_libro = precio_unitario_desc * cantidad
+
+            unitario_cup = convert_to_currency(precio_unitario_desc, 'USD', 'CUP')
+            unitario_mlc = convert_to_currency(precio_unitario_desc, 'USD', 'MLC')
+            total_libro_cup = convert_to_currency(total_libro, 'USD', 'CUP')
+            total_libro_mlc = convert_to_currency(total_libro, 'USD', 'MLC')
+
             mensaje += f"📚 Título: {titulo}\n"
             mensaje += f"👤 Autor: {autor}\n"
+
             if cantidad > 1:
                 mensaje += f"🔢 Cantidad: {cantidad}\n"
-            
-            mensaje += f"💰 {caratula_name}: {precio_base_caratula} USD | {cup_price_base} CUP | {mlc_price_base} MLC\n"
-            
+
+            mensaje += f"💰 Precio base: {base_price:.2f} USD\n"
+            mensaje += f"💰 {caratula_name}: {caratula_price:.2f} USD\n"
+
             for service in service_additives:
-                service_cup = convert_to_currency(service['price'], 'USD', 'CUP')
-                service_mlc = convert_to_currency(service['price'], 'USD', 'MLC')
-                mensaje += f"💰 {service['name']}: {service['price']} USD | {service_cup} CUP | {service_mlc} MLC\n"
-            
-            if discount != 0:
-                mensaje += f"📉 Descuento: {discount}%\n\n"
-            else:
-                mensaje += "\n"
-            
-            precio_base_con_descuento = precio_base_caratula * (1 - discount / 100)
-            precio_servicios = sum(service['price'] for service in service_additives)
-            precio_unitario_final = precio_base_con_descuento + precio_servicios
-            precio_total_libro = precio_unitario_final * cantidad
-            
-            unitario_cup = convert_to_currency(precio_unitario_final, 'USD', 'CUP')
-            unitario_mlc = convert_to_currency(precio_unitario_final, 'USD', 'MLC')
-            libro_total_cup = convert_to_currency(precio_total_libro, 'USD', 'CUP')
-            libro_total_mlc = convert_to_currency(precio_total_libro, 'USD', 'MLC')
-            
+                mensaje += f"💰 {service['name']}: {service['price']:.2f} USD\n"
+
+            if discount > 0:
+                mensaje += f"📉 Descuento aplicado: {discount}%\n"
+
             if cantidad > 1:
-                mensaje += f"💰 Precio unitario: {precio_unitario_final:.2f} USD | {unitario_cup} CUP | {unitario_mlc} MLC\n"
-                mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
+                mensaje += (
+                    f"💰 Precio unitario final: {precio_unitario_desc:.2f} USD | "
+                    f"{unitario_cup} CUP | {unitario_mlc} MLC\n"
+                    f"💰 Total libro: {total_libro:.2f} USD | "
+                    f"{total_libro_cup} CUP | {total_libro_mlc} MLC\n\n"
+                )
             else:
-                mensaje += f"💰 Total libro: {precio_total_libro:.2f} USD | {libro_total_cup} CUP | {libro_total_mlc} MLC\n\n"
+                mensaje += (
+                    f"💰 Total libro: {total_libro:.2f} USD | "
+                    f"{total_libro_cup} CUP | {total_libro_mlc} MLC\n\n"
+                )
 
-
-        descuento_numerico = self.add_order_discount.text() or 0
-        if descuento_numerico != 0:
-            mensaje += f"💰 Descuento general: {descuento_numerico} USD\n"
-        
         total_final = order_data['total_price']
         total_cup = convert_to_currency(total_final, 'USD', 'CUP')
         total_mlc = convert_to_currency(total_final, 'USD', 'MLC')
-        mensaje += f"💰 Total a pagar: {total_final:.2f} USD | {total_cup} CUP | {total_mlc} MLC\n\n"
 
+        mensaje += f"💰 Total a pagar: {total_final:.2f} USD | {total_cup} CUP | {total_mlc} MLC\n\n"
         mensaje += f"💰 Pago por adelantado: {order_data['payment_advance']:.2f} USD\n"
         mensaje += f"💰 Pago pendiente: {order_data['outstanding_payment']:.2f} USD\n\n"
 
         if order_data['delivery_price'] > 0:
-            delivery_cup = convert_to_currency(order_data['delivery_price'], 'USD', 'CUP')
-            delivery_mlc = convert_to_currency(order_data['delivery_price'], 'USD', 'MLC')
             mensaje += f"🚗 Mensajería: {order_data['delivery_price']:.2f} USD\n\n"
         else:
-            mensaje += f"🚗 Mensajería: Recogida\n\n"
+            mensaje += "🚗 Mensajería: Recogida\n\n"
 
         mensaje += "👤Información del contacto:\n"
         mensaje += f"— Nombre: {order_data['client']['name']}\n"
         mensaje += f"— Carnet de Identidad: {order_data['client']['identity']}\n"
         mensaje += f"— Teléfono: {order_data['client']['phone_number']}\n"
 
-        if (order_data['delivery_zone'] and 
-            'recogida' not in order_data['delivery_zone'].lower() and 
-            order_data['address']):
+        if order_data['delivery_zone'] and 'recogida' not in order_data['delivery_zone'].lower():
             mensaje += f"— Dirección de entrega: {order_data['address']}\n"
-        
+
         mensaje += f"— Servicio de entrega: {order_data['_type']}\n"
         mensaje += f"— Método de pago: {order_data['pay_method']}\n\n"
         mensaje += "🔆 Conoce nuestros trabajos en instagram.com/moe.libros"
+
         return mensaje
 
 

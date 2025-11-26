@@ -95,7 +95,8 @@ class RequestedBookAdditiveSerializer(serializers.ModelSerializer):
             'idRequested_book',
             'idAdditive',
             'idRequested_book_title',
-            'idAdditive_name'
+            'idAdditive_name',
+            "additive_price"
         ]
 
 
@@ -121,7 +122,7 @@ class BookOnOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book_on_order
-        fields = ['id', 'idRequested_book', 'idOrder', 'discount', 'ready', 'idRequested_book_title', 'idOrder_type', "quantity"]
+        fields = ['id', 'idRequested_book', 'idOrder', 'discount', 'ready', 'idRequested_book_title', 'idOrder_type', "quantity", "base_price"]
 
 #? ----------------------------
 #? Order 
